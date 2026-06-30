@@ -140,15 +140,25 @@ export const useTimelineStore = create<TimelineState>((set, get) => {
         };
       });
 
+      const start = new Date();
+      const end = new Date();
+      end.setDate(start.getDate() + (mappedDays.length - 1 || 0));
+
+      const formatDate = (d: Date) => {
+        return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      };
+
+      const totalBudgetVal = itinerary.budget?.total ? parseCost(itinerary.budget.total) : 1500;
+
       const newTrip: Trip = {
         id: `trip-${Date.now()}`,
         name: `Journey to ${destinationName}`,
         destination: destinationName,
-        startDate: "Oct 12, 2026",
-        endDate: "Oct 17, 2026",
+        startDate: formatDate(start),
+        endDate: formatDate(end),
         travelerCount: 2,
         days: mappedDays,
-        totalBudget: 1500,
+        totalBudget: totalBudgetVal,
         currency: "USD",
         manualExpenses: [],
       };

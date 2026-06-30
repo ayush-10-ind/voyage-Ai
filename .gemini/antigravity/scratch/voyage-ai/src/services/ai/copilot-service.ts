@@ -1,10 +1,5 @@
 import { TripPreferences, TripItinerary } from "@/features/copilot/types";
-import { DESTINATIONS } from "@/features/destination/constants";
 
-/**
- * Interface for the AI Copilot Service.
- * Allows seamless swapping of the mock implementation for OpenAI, Gemini, or LangChain later.
- */
 export interface AICopilotService {
   generateItinerary(
     preferences: TripPreferences,
@@ -12,20 +7,123 @@ export interface AICopilotService {
   ): Promise<TripItinerary>;
 }
 
-// Helper to simulate network latency and streaming text
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Destination-specific activity pools (supporting up to 10 days of unique activities)
+const ACTIVITY_POOLS: Record<string, Array<{ title: string; description: string; cost: string; category: "sightseeing" | "dining" | "transit" | "accommodation" | "other" }>> = {
+  tokyo: [
+    { title: "Meiji Shrine Walk", description: "Wander through the forested paths of Tokyo's most famous Shinto shrine.", cost: "Free", category: "sightseeing" },
+    { title: "Harajuku Crepes", description: "Sample premium crepes on Takeshita Street.", cost: "$8", category: "dining" },
+    { title: "Shibuya Sky Sunset", description: "Watch the sun set behind Mt. Fuji from Shibuya Sky.", cost: "$20", category: "sightseeing" },
+    { title: "Senso-ji Temple Tour", description: "Explore Tokyo's oldest Buddhist temple in Asakusa.", cost: "Free", category: "sightseeing" },
+    { title: "Akihabara Electric Town", description: "Walk through retro gaming and anime shops.", cost: "Free", category: "sightseeing" },
+    { title: "Tsukiji Sushi Tasting", description: "Sample fresh sashimi and tamagoyaki at Tsukiji Outer Market.", cost: "$35", category: "dining" },
+    { title: "teamLab Planets", description: "Immerse yourself in a digital, water-based art museum.", cost: "$32", category: "sightseeing" },
+    { title: "Shinjuku Gyoen National Garden", description: "Relax in one of Tokyo's largest and most beautiful parks.", cost: "$5", category: "sightseeing" },
+    { title: "Shimokitazawa Vintage Hunt", description: "Browse second-hand clothing shops and record stores.", cost: "Free", category: "other" },
+    { title: "Roppongi Hills View", description: "Enjoy panoramic night views of the Tokyo Tower.", cost: "$18", category: "sightseeing" },
+  ],
+  paris: [
+    { title: "Eiffel Tower Climb", description: "Ascend the iconic landmark for sweeping views of the Seine.", cost: "$28", category: "sightseeing" },
+    { title: "Seine River Cruise", description: "Glided past historic bridges and monuments on a glass-topped boat.", cost: "$15", category: "sightseeing" },
+    { title: "Louvre Museum Tour", description: "See the Mona Lisa and Venus de Milo in the world's largest art museum.", cost: "$22", category: "sightseeing" },
+    { title: "Montmartre Artist Walk", description: "Climb the cobblestone streets to the Sacré-Cœur Basilica.", cost: "Free", category: "sightseeing" },
+    { title: "Luxembourg Gardens Picnic", description: "Enjoy fresh baguettes and cheese in the royal gardens.", cost: "$10", category: "dining" },
+    { title: "Palace of Versailles", description: "Take a day trip to explore the Hall of Mirrors and royal gardens.", cost: "$25", category: "sightseeing" },
+    { title: "Musée d'Orsay", description: "Admire the world's largest collection of impressionist masterpieces.", cost: "$16", category: "sightseeing" },
+    { title: "Champs-Élysées Stroll", description: "Walk the grand avenue to the Arc de Triomphe.", cost: "Free", category: "sightseeing" },
+    { title: "Marais District Shopping", description: "Browse trendy boutiques and local galleries.", cost: "Free", category: "other" },
+    { title: "Sainte-Chapelle Stained Glass", description: "Marvel at the 13th-century Gothic stained glass windows.", cost: "$12", category: "sightseeing" },
+  ],
+  zermatt: [
+    { title: "Gornergrat Cogwheel Railway", description: "Ride the historic train to the 3,089-meter overlook.", cost: "$85", category: "sightseeing" },
+    { title: "Matterhorn Museum", description: "Learn about Zermatt's history and Matterhorn ascents.", cost: "$12", category: "sightseeing" },
+    { title: "Car-free Village Explorer", description: "Walk Bahnhofstrasse and admire traditional wooden barns.", cost: "Free", category: "sightseeing" },
+    { title: "Matterhorn Glacier Paradise", description: "Ascend the highest cable car in Europe.", cost: "$95", category: "sightseeing" },
+    { title: "Five Lakes Trail Hike", description: "Hike the scenic path reflecting the Matterhorn in alpine lakes.", cost: "Free", category: "sightseeing" },
+    { title: "Fondue at Saycheese!", description: "Indulge in traditional Swiss cheese fondue.", cost: "$45", category: "dining" },
+    { title: "Sunnegga Funicular", description: "Take the underground funicular to the sunny terrace.", cost: "$30", category: "sightseeing" },
+    { title: "Gorner Gorge Walkway", description: "Walk wooden paths suspended over a thundering glacial river.", cost: "$6", category: "sightseeing" },
+    { title: "Riffelsee Reflection Photo", description: "Capture the Matterhorn reflected in the still lake water.", cost: "Free", category: "other" },
+    { title: "Alpine Pasture Stroll", description: "Walk through fields of wildflowers with grazing sheep.", cost: "Free", category: "sightseeing" },
+  ],
+  reykjavik: [
+    { title: "Blue Lagoon Geothermal Spa", description: "Soak in silica-rich geothermal waters.", cost: "$85", category: "sightseeing" },
+    { title: "Hallgrímskirkja Cathedral", description: "Visit the iconic church and enjoy panoramic city views.", cost: "$10", category: "sightseeing" },
+    { title: "Golden Circle Tour", description: "See Gullfoss waterfall, Geysir, and Þingvellir National Park.", cost: "$65", category: "sightseeing" },
+    { title: "Harpa Concert Hall", description: "Admire the award-winning glass architecture by the harbor.", cost: "Free", category: "sightseeing" },
+    { title: "Laugavegur Shopping", description: "Explore Reykjavik's main street for local crafts and wool.", cost: "Free", category: "other" },
+    { title: "Perlan Museum", description: "Explore an interactive ice cave and planetarium.", cost: "$35", category: "sightseeing" },
+    { title: "Northern Lights Chase", description: "Embark on a night bus tour to spot the Aurora Borealis.", cost: "$55", category: "sightseeing" },
+    { title: "Whale Watching Cruise", description: "Sail from the old harbor to spot minke and humpback whales.", cost: "$80", category: "sightseeing" },
+    { title: "Tjörnin Pond Walk", description: "Stroll around the city pond feeding ducks and swans.", cost: "Free", category: "sightseeing" },
+    { title: "Black Sand Beach Day Trip", description: "Visit Vik's dramatic basalt columns and crashing waves.", cost: "$90", category: "sightseeing" },
+  ],
+  ubud: [
+    { title: "Tegallalang Rice Terraces", description: "Walk the beautiful terraced slopes at sunrise.", cost: "$5", category: "sightseeing" },
+    { title: "Sacred Monkey Forest", description: "Encounter Balinese long-tailed monkeys in their jungle temple.", cost: "$8", category: "sightseeing" },
+    { title: "Ubud Art Market", description: "Browse locally handcrafted woodcarvings and woven bags.", cost: "Free", category: "other" },
+    { title: "Campuhan Ridge Walk", description: "Enjoy a scenic trek over lush green valleys.", cost: "Free", category: "sightseeing" },
+    { title: "Tegenungan Waterfall", description: "Swim in the pool of a thundering jungle waterfall.", cost: "$3", category: "sightseeing" },
+    { title: "Balinese Cooking Class", description: "Learn to prepare traditional dishes using local spices.", cost: "$35", category: "dining" },
+    { title: "Saraswati Temple", description: "Admire the water temple dedicated to the goddess of wisdom.", cost: "Free", category: "sightseeing" },
+    { title: "Balinese Massage Spa", description: "Relax with a traditional full-body massage.", cost: "$25", category: "other" },
+    { title: "Goa Gajah (Elephant Cave)", description: "Explore the 9th-century sanctuary and bathing pools.", cost: "$4", category: "sightseeing" },
+    { title: "Traditional Dance Show", description: "Watch a dramatic Kecak or Legong dance performance.", cost: "$10", category: "sightseeing" },
+  ],
+  tromso: [
+    { title: "Fjord Cruise", description: "Sail through Arctic fjords on a silent electric catamaran.", cost: "$95", category: "sightseeing" },
+    { title: "Northern Lights Chase", description: "Chase the aurora with an experienced local guide.", cost: "$120", category: "sightseeing" },
+    { title: "Fjellheisen Cable Car", description: "Ascend Mount Storsteinen for views of Tromsø island.", cost: "$30", category: "sightseeing" },
+    { title: "Arctic Cathedral", description: "Visit the architectural landmark featuring stained glass.", cost: "$7", category: "sightseeing" },
+    { title: "Polaria Aquarium", description: "Watch bearded seals and learn about polar environments.", cost: "$20", category: "sightseeing" },
+    { title: "Tromsø Ice Domes", description: "Tour a magical hotel built entirely of snow and ice.", cost: "$85", category: "sightseeing" },
+    { title: "Dog Sledding", description: "MUSH through snowy landscapes with friendly huskies.", cost: "$150", category: "sightseeing" },
+    { title: "Ølhallen Pub Visit", description: "Sample Norwegian craft beers at Tromsø's oldest pub.", cost: "$15", category: "dining" },
+    { title: "Telegrafbukta Beach", description: "Enjoy Arctic beach views and stargazing.", cost: "Free", category: "sightseeing" },
+    { title: "Mack Brewery Tour", description: "Learn about the history of the world's northernmost brewery.", cost: "$25", category: "other" },
+  ],
+  bali: [
+    { title: "Uluwatu Temple Cliff Walk", description: "Explore the clifftop temple overlooking the Indian Ocean.", cost: "$5", category: "sightseeing" },
+    { title: "Kelingking Beach Lookout", description: "Admire the famous T-Rex shaped cliff on Nusa Penida.", cost: "$10", category: "sightseeing" },
+    { title: "Tanah Lot Temple Sunset", description: "Watch the sun set behind the iconic offshore pilgrimage temple.", cost: "$6", category: "sightseeing" },
+    { title: "Seminyak Beach Day", description: "Relax on sandy beaches and visit trendy beach clubs.", cost: "Free", category: "other" },
+    { title: "Mount Batur Sunrise Trek", description: "Hike the active volcano for a spectacular sunrise.", cost: "$45", category: "sightseeing" },
+    { title: "Waterbom Bali", description: "Spend the day at Asia's top-rated water park.", cost: "$35", category: "sightseeing" },
+    { title: "Ulun Danu Bratan Temple", description: "Visit the famous lake temple in the Bedugul highlands.", cost: "$5", category: "sightseeing" },
+    { title: "Jimbaran Bay Seafood Dinner", description: "Enjoy grilled seafood right on the sandy beach.", cost: "$30", category: "dining" },
+    { title: "Tirta Empul Holy Springs", description: "Participate in a traditional Balinese purification ritual.", cost: "$4", category: "sightseeing" },
+    { title: "Nusa Dua Snorkeling", description: "Swim with tropical fish and explore coral reefs.", cost: "$25", category: "sightseeing" },
+  ]
+};
+
+// Generic fallback activity pool
+const GENERIC_POOL = [
+  { title: "City Landmarks Tour", description: "Explore the most famous historical and cultural monuments.", cost: "Free", category: "sightseeing" as const },
+  { title: "Local Food Walk", description: "Sample traditional street food and regional specialties.", cost: "$20", category: "dining" as const },
+  { title: "Scenic Viewpoint Hike", description: "Walk to a high overlook for panoramic photos.", cost: "Free", category: "sightseeing" as const },
+  { title: "Central Park Stroll", description: "Relax in the city's main public park.", cost: "Free", category: "sightseeing" as const },
+  { title: "Museum of Fine Arts", description: "Browse world-class art collections and exhibits.", cost: "$15", category: "sightseeing" as const },
+  { title: "Boutique Shopping", description: "Explore independent shops and local designer boutiques.", cost: "Free", category: "other" as const },
+  { title: "Traditional Market Visit", description: "Experience the bustling local marketplace.", cost: "Free", category: "other" as const },
+  { title: "Sunset River Cruise", description: "Enjoy evening views from a scenic boat ride.", cost: "$30", category: "sightseeing" as const },
+  { title: "Local Cafe Coffee", description: "Relax with a specialty coffee and pastry.", cost: "$8", category: "dining" as const },
+  { title: "Botanical Gardens", description: "Walk through themed glasshouses and flower exhibitions.", cost: "$12", category: "sightseeing" as const },
+];
 
 export const mockCopilotService: AICopilotService = {
   async generateItinerary(
     preferences: TripPreferences,
     onTextChunk?: (chunk: string) => void
   ): Promise<TripItinerary> {
+    const destination = preferences.destination || "Tokyo";
+    const duration = preferences.duration || 5;
+    const budgetLevel = preferences.budget || "moderate";
+    const travelStyle = preferences.style || "balanced";
+    const travelerCompanions = preferences.companions || "solo";
+
     // 1. Simulate streaming thoughts / introductory text
-    const introText = `Analyzing your preferences...\n\nDestination: ${
-      preferences.destination || "Explore"
-    }\nDuration: ${preferences.duration || 3} Days\nStyle: ${
-      preferences.style || "Balanced"
-    }\nCompanions: ${preferences.companions || "Solo"}\n\nI'm crafting a bespoke itinerary tailored to your interests in ${
+    const introText = `Analyzing your travel preferences...\n\nDestination: ${destination}\nDuration: ${duration} Days\nStyle: ${travelStyle}\nBudget: ${budgetLevel}\nCompanions: ${travelerCompanions}\n\nI am crafting a bespoke, dynamic itinerary tailored to your interests in ${
       preferences.interests?.join(", ") || "culture and sightseeing"
     }. Let's design something extraordinary.`;
 
@@ -33,207 +131,102 @@ export const mockCopilotService: AICopilotService = {
       const words = introText.split(" ");
       for (let i = 0; i < words.length; i++) {
         onTextChunk(words[i] + " ");
-        await sleep(30 + Math.random() * 40); // Simulate typing speed
+        await sleep(25 + Math.random() * 20); // Fast typing speed
       }
     } else {
-      await sleep(2000); // Standard latency fallback
+      await sleep(1200);
     }
 
-    // 2. Generate destination-specific mock itinerary
-    const destName = (preferences.destination || "Tokyo").toLowerCase();
+    // 2. Resolve activity pool for destination
+    const key = destination.toLowerCase().replace(/[^a-z0-9]/g, "");
+    let pool = ACTIVITY_POOLS[key];
+    if (!pool) {
+      // Find partial match
+      const matchedKey = Object.keys(ACTIVITY_POOLS).find(k => key.includes(k) || k.includes(key));
+      pool = matchedKey ? ACTIVITY_POOLS[matchedKey] : GENERIC_POOL;
+    }
+
+    // 3. Generate exactly N days
+    const days: TripItinerary["days"] = [];
+    for (let dayNum = 1; dayNum <= duration; dayNum++) {
+      // Pick 2 unique activities for this day
+      const actIdx1 = (dayNum * 2 - 2) % pool.length;
+      const actIdx2 = (dayNum * 2 - 1) % pool.length;
+
+      const rawAct1 = pool[actIdx1];
+      const rawAct2 = pool[actIdx2];
+
+      days.push({
+        day: dayNum,
+        title: `Explore ${rawAct1.title.split(" ")[0]} & ${rawAct2.title.split(" ")[0]}`,
+        activities: [
+          {
+            time: "09:30 AM",
+            title: rawAct1.title,
+            description: rawAct1.description,
+            cost: rawAct1.cost
+          },
+          {
+            time: "02:30 PM",
+            title: rawAct2.title,
+            description: rawAct2.description,
+            cost: rawAct2.cost
+          }
+        ],
+        restaurants: [
+          {
+            name: `Local ${destination} Bistro`,
+            type: "Regional Cuisine",
+            cost: budgetLevel === "luxury" ? "$75" : budgetLevel === "budget" ? "$15" : "$30",
+            description: "A cozy spot serving fresh, authentic local dishes."
+          }
+        ]
+      });
+    }
+
+    // 4. Scale budget based on duration and budget level
+    const costPerDay = budgetLevel === "luxury" ? 500 : budgetLevel === "budget" ? 80 : 180;
+    const accommodationPerNight = budgetLevel === "luxury" ? 450 : budgetLevel === "budget" ? 60 : 140;
     
-    if (destName.includes("zermatt")) {
-      return getZermattMock(preferences);
-    } else if (destName.includes("reykjavik")) {
-      return getReykjavikMock(preferences);
-    } else if (destName.includes("ubud")) {
-      return getUbudMock(preferences);
-    } else if (destName.includes("tromso")) {
-      return getTromsoMock(preferences);
-    } else {
-      // Default to Tokyo
-      return getTokyoMock(preferences);
-    }
-  },
-};
+    const totalAccom = accommodationPerNight * (duration - 1 || 1);
+    const totalDaily = costPerDay * duration;
+    const totalBudgetNum = totalAccom + totalDaily;
 
-// ==========================================
-// DESTINATION SPECIFIC MOCK ITINERARIES
-// ==========================================
+    const budgetBreakdown = [
+      { category: "Accommodation", cost: `$${totalAccom.toLocaleString()}` },
+      { category: "Activities & Food", cost: `$${totalDaily.toLocaleString()}` }
+    ];
 
-function getTokyoMock(p: TripPreferences): TripItinerary {
-  return {
-    overview: `A premium ${p.duration || 5}-day immersion into Tokyo's futuristic skyline and ancient shrines, tailored for a ${p.style || "balanced"} pace.`,
-    days: [
-      {
-        day: 1,
-        title: "Neon & Tradition in Shibuya",
-        activities: [
-          { time: "09:30 AM", title: "Meiji Shrine Walk", description: "Wander through the forested paths of Tokyo's most famous Shinto shrine.", cost: "Free" },
-          { time: "01:00 PM", title: "Harajuku Street Food", description: "Explore Takeshita Street and sample premium crepes and rainbow cotton candy.", cost: "$15" },
-          { time: "04:30 PM", title: "Shibuya Sky Sunset", description: "Watch the sun set behind Mt. Fuji from 229 meters above Shibuya Crossing.", cost: "$20" }
-        ],
-        restaurants: [
-          { name: "Ichiran Shibuya", type: "Ramen", cost: "$12", description: "Tonkotsu ramen in individual dining booths." }
-        ]
+    // 5. Select Hotel
+    const hotelNames: Record<string, string> = {
+      tokyo: "Aman Tokyo",
+      paris: "Le Meurice Paris",
+      zermatt: "The Omnia Zermatt",
+      reykjavik: "The Reykjavik EDITION",
+      ubud: "Mandapa, Ritz-Carlton",
+      tromso: "Clarion Hotel The Edge",
+      bali: "Alila Villas Uluwatu"
+    };
+    const resolvedHotel = hotelNames[key] || `${destination} Grand Resort`;
+
+    return {
+      overview: `A premium ${duration}-day journey in ${destination}, tailored for a ${travelStyle} pace with ${travelerCompanions} travelers.`,
+      days,
+      budget: {
+        total: `$${totalBudgetNum.toLocaleString()}`,
+        breakdown: budgetBreakdown
       },
-      {
-        day: 2,
-        title: "Electric Culture & Historic Asakusa",
-        activities: [
-          { time: "10:00 AM", title: "Senso-ji Temple", description: "Tokyo's oldest Buddhist temple, entered through the iconic Kaminarimon Gate.", cost: "Free" },
-          { time: "02:00 PM", title: "Akihabara Tech Exploration", description: "Wander through multi-story electronics department stores and retro gaming arcades.", cost: "Free" }
-        ],
-        restaurants: [
-          { name: "Asakusa Imahan", type: "Sukiyaki", cost: "$60", description: "Fine wagyu beef sukiyaki serving since 1895." }
-        ]
-      }
-    ],
-    budget: {
-      total: p.budget === "luxury" ? "$1,500" : p.budget === "budget" ? "$450" : "$850",
-      breakdown: [
-        { category: "Accommodation", cost: p.budget === "luxury" ? "$800" : p.budget === "budget" ? "$200" : "$450" },
-        { category: "Activities", cost: "$150" },
-        { category: "Food & Drinks", cost: "$250" }
-      ]
-    },
-    hotels: [
-      { name: "Aman Tokyo", rating: "5.0", price: "$950/night", description: "Luxury sanctuary in the Otemachi tower overlooking the Imperial Palace." }
-    ],
-    packingList: ["Comfortable walking shoes", "Suica/Pasmo card", "Pocket Wi-Fi / eSIM", "Universal power adapter"],
-    hiddenGems: ["Todoroki Valley (a secret jungle canyon in the middle of Tokyo)", "Golden Gai micro-bars"],
-    safetyTips: ["Earthquake safety drills are common; download the Safety Tips app.", "Tokyo is exceptionally safe, but exercise standard caution in nightlife districts like Roppongi."]
-  };
-}
-
-function getZermattMock(p: TripPreferences): TripItinerary {
-  return {
-    overview: `A high-alpine escape in Zermatt, showcasing the Matterhorn and premium Swiss hospitality over ${p.duration || 3} days.`,
-    days: [
-      {
-        day: 1,
-        title: "Alpine Arrival & Village Stroll",
-        activities: [
-          { time: "11:00 AM", title: "Car-free Village Explorer", description: "Stroll along Bahnhofstrasse, Zermatt's main street, taking in the historic wooden barns.", cost: "Free" },
-          { time: "03:00 PM", title: "Matterhorn Museum", description: "Learn about the tragic first ascent of the Matterhorn in 1865.", cost: "$12" }
-        ],
-        restaurants: [
-          { name: "Saycheese!", type: "Swiss Fondue", cost: "$45", description: "Excellent local cheese fondue inside the Grand Hotel Zermatterhof." }
-        ]
-      }
-    ],
-    budget: {
-      total: p.budget === "luxury" ? "$2,200" : "$1,100",
-      breakdown: [
-        { category: "Hotels", cost: "$650" },
-        { category: "Mountain Passes", cost: "$200" },
-        { category: "Dining", cost: "$250" }
-      ]
-    },
-    hotels: [
-      { name: "The Omnia", rating: "4.9", price: "$650/night", description: "Contemporary mountain lodge built into a rock face above Zermatt." }
-    ],
-    packingList: ["Heavy thermal layers", "Windproof jacket", "Sturdy hiking boots", "Polarized sunglasses"],
-    hiddenGems: ["Findelbach bridge photography spot", "Stafelalp hiking trail"],
-    safetyTips: ["Always check the Gornergrat weather feed before purchasing train tickets.", "Altitude sickness can occur; stay hydrated."]
-  };
-}
-
-function getReykjavikMock(p: TripPreferences): TripItinerary {
-  return {
-    overview: `An immersive Icelandic adventure exploring geothermal wonders and volcanic landscapes from Reykjavik.`,
-    days: [
-      {
-        day: 1,
-        title: "Geothermal Healing & City Sights",
-        activities: [
-          { time: "09:00 AM", title: "Blue Lagoon Spa", description: "Soak in the mineral-rich geothermal waters surrounded by black lava fields.", cost: "$85" },
-          { time: "03:00 PM", title: "Hallgrímskirkja Cathedral", description: "Take the elevator to the tower of Iceland's largest church for panoramic city views.", cost: "$10" }
-        ],
-        restaurants: [
-          { name: "Dill Restaurant", type: "New Nordic", cost: "$120", description: "Iceland's first Michelin-starred restaurant celebrating local ingredients." }
-        ]
-      }
-    ],
-    budget: {
-      total: "$980",
-      breakdown: [
-        { category: "Excursions", cost: "$350" },
-        { category: "Car Rental", cost: "$250" },
-        { category: "Food", cost: "$380" }
-      ]
-    },
-    hotels: [
-      { name: "The Reykjavik EDITION", rating: "4.8", price: "$400/night", description: "Modern luxury hotel situated next to the Harpa Concert Hall." }
-    ],
-    packingList: ["Waterproof outerwear", "Swimwear", "Thermal base layers", "Credit card (Iceland is virtually cashless)"],
-    hiddenGems: ["Grótta Lighthouse hot spring", "Bæjarins Beztu Pylsur hot dog stand"],
-    safetyTips: ["Weather in Iceland changes rapidly. Check safetravel.is daily.", "Do not step off marked paths in geothermal areas."]
-  };
-}
-
-function getUbudMock(p: TripPreferences): TripItinerary {
-  return {
-    overview: `A peaceful, spiritual journey through Ubud's temples, rice fields, and culinary hotspots.`,
-    days: [
-      {
-        day: 1,
-        title: "Rice Terraces & Sacred Forests",
-        activities: [
-          { time: "08:00 AM", title: "Tegallalang Sunrise walk", description: "Walk through the terraced rice paddies in the cool morning air.", cost: "$3" },
-          { time: "11:00 AM", title: "Sacred Monkey Forest Sanctuary", description: "Encounter Balinese long-tailed monkeys in their natural jungle habitat.", cost: "$6" }
-        ],
-        restaurants: [
-          { name: "Locavore NXT", type: "Creative Balinese", cost: "$80", description: "Hyper-local ingredient tasting menu in the jungle." }
-        ]
-      }
-    ],
-    budget: {
-      total: "$350",
-      breakdown: [
-        { category: "Villa Accommodation", cost: "$180" },
-        { category: "Wellness Spa", cost: "$70" },
-        { category: "Activities", cost: "$100" }
-      ]
-    },
-    hotels: [
-      { name: "Mandapa, a Ritz-Carlton Reserve", rating: "5.0", price: "$800/night", description: "A secluded sanctuary along the Ayung River in Ubud." }
-    ],
-    packingList: ["Light linen clothing", "Insect repellent", "Modest sarong for temple visits", "Sunscreen"],
-    hiddenGems: ["Taman Sari waterfall", "Kari House cooking school"],
-    safetyTips: ["Only drink bottled or filtered water; avoid ice at street stalls.", "Watch your belongings around monkeys; they will grab glasses and phones."]
-  };
-}
-
-function getTromsoMock(p: TripPreferences): TripItinerary {
-  return {
-    overview: `An Arctic expedition in Tromsø, optimized for viewing the Northern Lights and dog sledding.`,
-    days: [
-      {
-        day: 1,
-        title: "Fjords & Northern Lights Chase",
-        activities: [
-          { time: "10:00 AM", title: "Fjord Cruise", description: "Sail through majestic Arctic fjords on a silent electric catamaran.", cost: "$95" },
-          { time: "07:00 PM", title: "Northern Lights Chase", description: "Embark on a guided bus expedition to escape light pollution and find the Aurora.", cost: "$120" }
-        ],
-        restaurants: [
-          { name: "Mathallen Tromsø", type: "Arctic Fine Dining", cost: "$75", description: "Gourmet dishes featuring reindeer, stockfish, and local berries." }
-        ]
-      }
-    ],
-    budget: {
-      total: "$1,200",
-      breakdown: [
-        { category: "Tours", cost: "$400" },
-        { category: "Lodging", cost: "$500" },
-        { category: "Dining", cost: "$300" }
-      ]
-    },
-    hotels: [
-      { name: "Clarion Hotel The Edge", rating: "4.6", price: "$220/night", description: "Stylish waterfront hotel with a skybar overlooking the Tromsø bridge." }
-    ],
-    packingList: ["Merino wool underwear", "Thick mittens and hat", "Tripod for aurora photography", "Hand warmers"],
-    hiddenGems: ["Telegrafbukta beach at dusk", "Ølhallen (Tromsø's oldest pub, featuring 72 Norwegian craft beers on tap)"],
-    safetyTips: ["Black ice is common on sidewalks; wear shoe spikes (brodder).", "Arctic winds can drop temperatures rapidly; dress in layers."]
-  };
-}
+      hotels: [
+        {
+          name: resolvedHotel,
+          rating: "4.8",
+          price: `$${accommodationPerNight}/night`,
+          description: "Premium lodging selected based on your budget and style."
+        }
+      ],
+      packingList: ["Comfortable travel shoes", "Local currency / Cards", "Universal adapter", "Weather-appropriate layers"],
+      hiddenGems: [`Secret viewpoint overlooking ${destination}`, "Quiet local cafe"],
+      safetyTips: [`Standard travel precautions apply in ${destination}. Stay hydrated and keep emergency numbers handy.`]
+    };
+  }
+};

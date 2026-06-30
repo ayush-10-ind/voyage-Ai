@@ -10,6 +10,8 @@ import { Chip } from "@/components/ui/misc-primitives";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Icons } from "@/components/ui/icons";
+import { useTimelineStore } from "@/features/timeline/store/use-timeline-store";
+import { useCopilotStore } from "@/features/copilot/store/use-copilot-store";
 
 interface LandingViewProps {
   onStartPlanning: (destination?: string) => void;
@@ -17,6 +19,25 @@ interface LandingViewProps {
 
 export function LandingView({ onStartPlanning }: LandingViewProps) {
   const [showOverlay, setShowOverlay] = useState(false);
+  const trip = useTimelineStore((state) => state.trip);
+  const { itinerary } = useCopilotStore();
+
+  // Dynamic values
+  const destinationName = trip?.destination || "Swiss Alps";
+  const totalBudget = trip?.totalBudget ? `$${trip.totalBudget.toLocaleString()}` : (itinerary?.budget?.total || "$2,400");
+  const hotelSelected = itinerary?.hotels?.[0]?.name || "Aman Tokyo";
+
+  const getAirportCode = (dest: string) => {
+    if (dest.toLowerCase().includes("tokyo")) return "HND";
+    if (dest.toLowerCase().includes("paris")) return "CDG";
+    if (dest.toLowerCase().includes("zermatt")) return "ZRH";
+    if (dest.toLowerCase().includes("reykjavik")) return "KEF";
+    if (dest.toLowerCase().includes("ubud") || dest.toLowerCase().includes("bali")) return "DPS";
+    if (dest.toLowerCase().includes("tromso")) return "TOS";
+    return dest.substring(0, 3).toUpperCase();
+  };
+
+  const flightText = trip ? `${getAirportCode(trip.destination)} ➔ JFK • On Time` : "HND ➔ JFK • On Time";
 
   // Mouse Parallax Motion Values
   const mouseX = useMotionValue(0);
@@ -164,7 +185,7 @@ export function LandingView({ onStartPlanning }: LandingViewProps) {
               <Icons.flight className="h-5 w-5 text-primary" />
               <div className="text-left">
                 <p className="text-[10px] uppercase font-semibold text-muted-foreground">Flights</p>
-                <p className="text-xs font-bold">HND ➔ JFK • On Time</p>
+                <p className="text-xs font-bold">{flightText}</p>
               </div>
             </GlassCard>
           </motion.div>
@@ -183,7 +204,7 @@ export function LandingView({ onStartPlanning }: LandingViewProps) {
               <Icons.hotel className="h-5 w-5 text-secondary" />
               <div className="text-left">
                 <p className="text-[10px] uppercase font-semibold text-muted-foreground">Hotels</p>
-                <p className="text-xs font-bold">Aman Tokyo • 5★</p>
+                <p className="text-xs font-bold">{hotelSelected} • 5★</p>
               </div>
             </GlassCard>
           </motion.div>
@@ -202,7 +223,7 @@ export function LandingView({ onStartPlanning }: LandingViewProps) {
               <Icons.weatherSun className="h-5 w-5 text-amber-400" />
               <div className="text-left">
                 <p className="text-[10px] uppercase font-semibold text-muted-foreground">Weather</p>
-                <p className="text-xs font-bold">Swiss Alps • 18°C Sunny</p>
+                <p className="text-xs font-bold">{destinationName} • 18°C Sunny</p>
               </div>
             </GlassCard>
           </motion.div>
@@ -221,7 +242,7 @@ export function LandingView({ onStartPlanning }: LandingViewProps) {
               <Icons.budget className="h-5 w-5 text-emerald-400" />
               <div className="text-left">
                 <p className="text-[10px] uppercase font-semibold text-muted-foreground">Budget</p>
-                <p className="text-xs font-bold">Trip Budget • $2,400</p>
+                <p className="text-xs font-bold">Trip Budget • {totalBudget}</p>
               </div>
             </GlassCard>
           </motion.div>
