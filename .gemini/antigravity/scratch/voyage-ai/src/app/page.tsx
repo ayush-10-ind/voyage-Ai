@@ -36,6 +36,11 @@ export default function Home() {
         if (createdTrip.totalBudget === undefined || createdTrip.totalBudget <= 0) {
           validationErrors.push("Budget not initialized.");
         }
+        if (createdTrip.travelerCount === undefined || createdTrip.travelerCount <= 0) {
+          validationErrors.push("Traveler count not initialized.");
+        } else if (createdTrip.travelerCount !== (preferences.travelers || 1)) {
+          validationErrors.push(`Traveler count (${createdTrip.travelerCount}) does not match requested count (${preferences.travelers || 1}).`);
+        }
       }
 
       const totalActivities = createdTrip?.days.flatMap(d => d.activities).length || 0;

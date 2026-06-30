@@ -156,7 +156,7 @@ export const useTimelineStore = create<TimelineState>((set, get) => {
         destination: destinationName,
         startDate: formatDate(start),
         endDate: formatDate(end),
-        travelerCount: 2,
+        travelerCount: itinerary.travelers || 2,
         days: mappedDays,
         totalBudget: totalBudgetVal,
         currency: "USD",

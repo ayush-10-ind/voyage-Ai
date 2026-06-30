@@ -145,7 +145,9 @@ export const useCopilotStore = create<CopilotState>((set, get) => ({
     else if (currentStep === 1) updatedPrefs.duration = parseInt(answer) || 5;
     else if (currentStep === 2) {
       const styleVal = answer.toLowerCase();
-      updatedPrefs.style = styleVal.includes("relax") ? "relaxed" : styleVal.includes("fast") ? "fast-paced" : "balanced";
+      const style = styleVal.includes("relax") ? "relaxed" : styleVal.includes("fast") ? "fast-paced" : "balanced";
+      updatedPrefs.style = style;
+      updatedPrefs.travelStyle = style;
     } else if (currentStep === 3) {
       const budgetVal = answer.toLowerCase();
       updatedPrefs.budget = budgetVal.includes("lux") ? "luxury" : budgetVal.includes("bud") ? "budget" : "moderate";
@@ -153,7 +155,32 @@ export const useCopilotStore = create<CopilotState>((set, get) => ({
       updatedPrefs.interests = answer.split(",").map(i => i.trim());
     } else if (currentStep === 5) {
       const compVal = answer.toLowerCase();
-      updatedPrefs.companions = compVal.includes("couple") ? "couple" : compVal.includes("fam") ? "family" : compVal.includes("friend") ? "friends" : "solo";
+      let companions: "solo" | "couple" | "family" | "friends" = "solo";
+      let travelers = 1;
+      let accommodationType = "single room";
+      
+      if (compVal.includes("couple")) {
+        companions = "couple";
+        travelers = 2;
+        accommodationType = "double room";
+      } else if (compVal.includes("fam")) {
+        companions = "family";
+        travelers = 4;
+        accommodationType = "family suite";
+      } else if (compVal.includes("friend")) {
+        companions = "friends";
+        travelers = 3;
+        accommodationType = "shared rooms";
+      }
+      
+      updatedPrefs.companions = companions;
+      updatedPrefs.travelers = travelers;
+      updatedPrefs.accommodationType = accommodationType;
+
+      // Set transportationPreference based on budget
+      updatedPrefs.transportationPreference = 
+        updatedPrefs.budget === "luxury" ? "private transfers" :
+        updatedPrefs.budget === "budget" ? "public transport" : "transit / rideshare";
     }
 
     const nextStep = currentStep + 1;

@@ -12,9 +12,13 @@ export interface TripPreferences {
   destination?: string;
   duration?: number;
   style?: "relaxed" | "balanced" | "fast-paced";
+  travelStyle?: "relaxed" | "balanced" | "fast-paced";
   budget?: "budget" | "moderate" | "luxury";
   interests?: string[];
   companions?: "solo" | "couple" | "family" | "friends";
+  travelers?: number;
+  accommodationType?: string;
+  transportationPreference?: string;
 }
 
 export interface Activity {
@@ -61,4 +65,6 @@ export interface TripItinerary {
   packingList: string[];
   hiddenGems: string[];
   safetyTips: string[];
+  travelers?: number;
+  companions?: string;
 }

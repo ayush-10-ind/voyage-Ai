@@ -9,6 +9,39 @@ export interface AICopilotService {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Helper to personalize activity based on companions and budget
+const getPersonalizedActivity = (
+  act: { time: string; title: string; description: string; cost: string; category: string },
+  companions: string,
+  budget: string
+) => {
+  let title = act.title;
+  let description = act.description;
+  let cost = act.cost;
+
+  // 1. Adjust cost based on budget
+  if (budget === "luxury") {
+    cost = act.cost !== "Free" ? `$${(parseFloat(act.cost.replace("$", "")) * 2.5).toFixed(0)}` : "Free";
+    description = `[VIP Premium] ${description} Includes private transfer, fast-track entry, and refreshments.`;
+  } else if (budget === "budget") {
+    cost = act.cost !== "Free" ? `$${(parseFloat(act.cost.replace("$", "")) * 0.6).toFixed(0)}` : "Free";
+    description = `${description} (Using public transit & budget discounts).`;
+  }
+
+  // 2. Personalize description based on companions
+  if (companions === "solo") {
+    description = `${description} Highly recommended for solo travelers seeking scenic viewpoints, local history, and photography spots.`;
+  } else if (companions === "couple") {
+    description = `${description} Offers a romantic setting and beautiful photo opportunities for couples.`;
+  } else if (companions === "family") {
+    description = `${description} Excellent family-friendly atmosphere with stroller access and kids' amenities.`;
+  } else if (companions === "friends") {
+    description = `${description} Great group activity with plenty of spots for team photos and social dining nearby.`;
+  }
+
+  return { time: act.time, title, description, cost };
+};
+
 // Destination-specific activity pools (supporting up to 10 days of unique activities)
 const ACTIVITY_POOLS: Record<string, Array<{ title: string; description: string; cost: string; category: "sightseeing" | "dining" | "transit" | "accommodation" | "other" }>> = {
   tokyo: [
@@ -97,7 +130,6 @@ const ACTIVITY_POOLS: Record<string, Array<{ title: string; description: string;
   ]
 };
 
-// Generic fallback activity pool
 const GENERIC_POOL = [
   { title: "City Landmarks Tour", description: "Explore the most famous historical and cultural monuments.", cost: "Free", category: "sightseeing" as const },
   { title: "Local Food Walk", description: "Sample traditional street food and regional specialties.", cost: "$20", category: "dining" as const },
@@ -119,11 +151,12 @@ export const mockCopilotService: AICopilotService = {
     const destination = preferences.destination || "Tokyo";
     const duration = preferences.duration || 5;
     const budgetLevel = preferences.budget || "moderate";
-    const travelStyle = preferences.style || "balanced";
+    const travelStyle = preferences.style || preferences.travelStyle || "balanced";
     const travelerCompanions = preferences.companions || "solo";
+    const travelers = preferences.travelers || 1;
 
     // 1. Simulate streaming thoughts / introductory text
-    const introText = `Analyzing your travel preferences...\n\nDestination: ${destination}\nDuration: ${duration} Days\nStyle: ${travelStyle}\nBudget: ${budgetLevel}\nCompanions: ${travelerCompanions}\n\nI am crafting a bespoke, dynamic itinerary tailored to your interests in ${
+    const introText = `Analyzing your travel preferences...\n\nDestination: ${destination}\nDuration: ${duration} Days\nStyle: ${travelStyle}\nBudget: ${budgetLevel}\nCompanions: ${travelerCompanions} (${travelers} travelers)\n\nI am crafting a bespoke, dynamic itinerary tailored to your interests in ${
       preferences.interests?.join(", ") || "culture and sightseeing"
     }. Let's design something extraordinary.`;
 
@@ -131,65 +164,72 @@ export const mockCopilotService: AICopilotService = {
       const words = introText.split(" ");
       for (let i = 0; i < words.length; i++) {
         onTextChunk(words[i] + " ");
-        await sleep(25 + Math.random() * 20); // Fast typing speed
+        await sleep(20 + Math.random() * 15);
       }
     } else {
-      await sleep(1200);
+      await sleep(1000);
     }
 
     // 2. Resolve activity pool for destination
     const key = destination.toLowerCase().replace(/[^a-z0-9]/g, "");
     let pool = ACTIVITY_POOLS[key];
     if (!pool) {
-      // Find partial match
       const matchedKey = Object.keys(ACTIVITY_POOLS).find(k => key.includes(k) || k.includes(key));
       pool = matchedKey ? ACTIVITY_POOLS[matchedKey] : GENERIC_POOL;
     }
 
+    // Determine number of activities per day based on Travel Style
+    let activitiesPerDay = 2;
+    if (travelStyle === "relaxed") activitiesPerDay = 1;
+    else if (travelStyle === "fast-paced") activitiesPerDay = 3;
+
     // 3. Generate exactly N days
     const days: TripItinerary["days"] = [];
     for (let dayNum = 1; dayNum <= duration; dayNum++) {
-      // Pick 2 unique activities for this day
-      const actIdx1 = (dayNum * 2 - 2) % pool.length;
-      const actIdx2 = (dayNum * 2 - 1) % pool.length;
-
-      const rawAct1 = pool[actIdx1];
-      const rawAct2 = pool[actIdx2];
+      const dayActivities = [];
+      for (let actNum = 0; actNum < activitiesPerDay; actNum++) {
+        const poolIdx = (dayNum * 3 + actNum) % pool.length;
+        const rawAct = pool[poolIdx];
+        
+        const time = actNum === 0 ? "09:30 AM" : actNum === 1 ? "02:30 PM" : "07:30 PM";
+        
+        dayActivities.push(
+          getPersonalizedActivity(
+            {
+              time,
+              title: rawAct.title,
+              description: rawAct.description,
+              cost: rawAct.cost,
+              category: rawAct.category
+            },
+            travelerCompanions,
+            budgetLevel
+          )
+        );
+      }
 
       days.push({
         day: dayNum,
-        title: `Explore ${rawAct1.title.split(" ")[0]} & ${rawAct2.title.split(" ")[0]}`,
-        activities: [
-          {
-            time: "09:30 AM",
-            title: rawAct1.title,
-            description: rawAct1.description,
-            cost: rawAct1.cost
-          },
-          {
-            time: "02:30 PM",
-            title: rawAct2.title,
-            description: rawAct2.description,
-            cost: rawAct2.cost
-          }
-        ],
+        title: `Explore ${dayActivities[0]?.title.split(" ")[0] || "Destination"}`,
+        activities: dayActivities,
         restaurants: [
           {
             name: `Local ${destination} Bistro`,
             type: "Regional Cuisine",
             cost: budgetLevel === "luxury" ? "$75" : budgetLevel === "budget" ? "$15" : "$30",
-            description: "A cozy spot serving fresh, authentic local dishes."
+            description: `A cozy spot serving fresh, authentic local dishes. Perfect for a ${travelerCompanions} group.`
           }
         ]
       });
     }
 
-    // 4. Scale budget based on duration and budget level
+    // 4. Scale budget based on duration, travelers, and budget level
     const costPerDay = budgetLevel === "luxury" ? 500 : budgetLevel === "budget" ? 80 : 180;
     const accommodationPerNight = budgetLevel === "luxury" ? 450 : budgetLevel === "budget" ? 60 : 140;
     
-    const totalAccom = accommodationPerNight * (duration - 1 || 1);
-    const totalDaily = costPerDay * duration;
+    // Scale budget with traveler count
+    const totalAccom = accommodationPerNight * (duration - 1 || 1) * (travelers > 2 ? 2 : 1);
+    const totalDaily = costPerDay * duration * travelers;
     const totalBudgetNum = totalAccom + totalDaily;
 
     const budgetBreakdown = [
@@ -208,9 +248,15 @@ export const mockCopilotService: AICopilotService = {
       bali: "Alila Villas Uluwatu"
     };
     const resolvedHotel = hotelNames[key] || `${destination} Grand Resort`;
+    
+    // Resolve room type based on companions
+    const roomType = 
+      travelerCompanions === "solo" ? "Single Room" :
+      travelerCompanions === "couple" ? "Double Room" :
+      travelerCompanions === "family" ? "Family Suite" : "Shared Rooms";
 
     return {
-      overview: `A premium ${duration}-day journey in ${destination}, tailored for a ${travelStyle} pace with ${travelerCompanions} travelers.`,
+      overview: `A premium ${duration}-day journey in ${destination}, tailored for a ${travelStyle} pace with ${travelers} travelers (${travelerCompanions}).`,
       days,
       budget: {
         total: `$${totalBudgetNum.toLocaleString()}`,
@@ -221,12 +267,14 @@ export const mockCopilotService: AICopilotService = {
           name: resolvedHotel,
           rating: "4.8",
           price: `$${accommodationPerNight}/night`,
-          description: "Premium lodging selected based on your budget and style."
+          description: `Premium lodging selected based on your budget and style. Selected Room Type: ${roomType}.`
         }
       ],
       packingList: ["Comfortable travel shoes", "Local currency / Cards", "Universal adapter", "Weather-appropriate layers"],
       hiddenGems: [`Secret viewpoint overlooking ${destination}`, "Quiet local cafe"],
-      safetyTips: [`Standard travel precautions apply in ${destination}. Stay hydrated and keep emergency numbers handy.`]
+      safetyTips: [`Standard travel precautions apply in ${destination}. Stay hydrated and keep emergency numbers handy.`],
+      travelers,
+      companions: travelerCompanions
     };
   }
 };
