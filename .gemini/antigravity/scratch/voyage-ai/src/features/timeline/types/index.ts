@@ -53,6 +53,8 @@ export interface Trip {
   totalBudget?: number;
   currency?: string;
   manualExpenses?: ExpenseItem[];
+  version?: number;
+  status?: string;
 }
 
 export interface DragItem {

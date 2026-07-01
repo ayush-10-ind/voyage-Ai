@@ -3,6 +3,8 @@ import { Trip, Day, Activity, ActivityCategory, ExpenseItem } from "../types";
 import { toast } from "sonner";
 import { VoyageEventBus } from "@/lib/voyage-event-bus";
 import { TravelIntelligenceEngine } from "@/features/travel-intelligence/domain/travel-intelligence-engine";
+import { TripDBService } from "@/services/db/trip-db-service";
+import { VoyageLogger } from "@/lib/logger";
 
 interface TimelineState {
   trip: Trip | null;
@@ -12,6 +14,13 @@ interface TimelineState {
   searchQuery: string;
   categoryFilter: ActivityCategory | "all";
   viewMode: "timeline" | "split" | "map-focus";
+  
+  // Save status
+  saveStatus: "unsaved" | "saving" | "saved" | "failed" | "offline";
+  lastSaved: number | null;
+  saveTripToDB: (userId: string, preferences: any) => Promise<void>;
+  loadTripFromDB: (tripData: any) => void;
+  clearTrip: () => void;
   
   // History Stack
   history: Trip[];
@@ -54,6 +63,7 @@ export const useTimelineStore = create<TimelineState>((set, get) => {
       history: [...history, JSON.parse(JSON.stringify(trip))].slice(-50), // Limit to 50 states
       future: [],
       trip: newTrip,
+      saveStatus: "unsaved" // Automatically mark as unsaved on edit!
     });
   };
 
@@ -67,6 +77,124 @@ export const useTimelineStore = create<TimelineState>((set, get) => {
     viewMode: "timeline",
     history: [],
     future: [],
+
+    saveStatus: "saved",
+    lastSaved: null,
+
+    saveTripToDB: async (userId, preferences) => {
+      const { trip } = get();
+      if (!trip) return;
+
+      const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
+
+      if (isOffline) {
+        set({ saveStatus: "offline" });
+        const companionType = preferences.companions || "solo";
+        const budget = preferences.budget || "moderate";
+        const travelStyle = preferences.style || preferences.travelStyle || "balanced";
+        const interests = preferences.interests || [];
+
+        // Increment version on every successful save
+        const nextVersion = (trip.version || 0) + 1;
+        const updatedTrip = { ...trip, version: nextVersion };
+
+        await TripDBService.saveTrip(userId, updatedTrip, companionType, budget, travelStyle, interests);
+
+        set({ 
+          trip: updatedTrip, 
+          lastSaved: Date.now() 
+        });
+        return;
+      }
+
+      set({ saveStatus: "saving" });
+
+      try {
+        const companionType = preferences.companions || "solo";
+        const budget = preferences.budget || "moderate";
+        const travelStyle = preferences.style || preferences.travelStyle || "balanced";
+        const interests = preferences.interests || [];
+
+        // Increment version on every successful save
+        const nextVersion = (trip.version || 0) + 1;
+        const updatedTrip = { ...trip, version: nextVersion };
+
+        await TripDBService.saveTrip(userId, updatedTrip, companionType, budget, travelStyle, interests);
+
+        set({ 
+          trip: updatedTrip,
+          saveStatus: "saved",
+          lastSaved: Date.now()
+        });
+      } catch (err) {
+        set({ saveStatus: "failed" });
+        VoyageLogger.error("DB", "Failed to save trip to database");
+      }
+    },
+
+    loadTripFromDB: (tripData) => {
+      if (!tripData) {
+        set({
+          trip: null,
+          history: [],
+          future: [],
+          selectedActivityId: null,
+          editingActivityId: null,
+          expandedActivityIds: new Set(),
+          saveStatus: "saved",
+          lastSaved: null
+        });
+        return;
+      }
+
+      const loadedTrip: Trip = {
+        id: tripData.id,
+        name: tripData.title || tripData.travelMetadata?.name || `Journey to ${tripData.destination}`,
+        destination: tripData.destination,
+        startDate: tripData.travelMetadata?.startDate || "",
+        endDate: tripData.travelMetadata?.endDate || "",
+        travelerCount: tripData.travelerCount || 1,
+        days: tripData.timeline || [],
+        totalBudget: tripData.finance?.totalBudget || 0,
+        currency: tripData.finance?.currency || "USD",
+        manualExpenses: tripData.finance?.manualExpenses || [],
+        version: tripData.version || 1,
+        status: tripData.status || "draft"
+      };
+
+      set({
+        trip: loadedTrip,
+        history: [],
+        future: [],
+        selectedActivityId: null,
+        editingActivityId: null,
+        expandedActivityIds: new Set(),
+        saveStatus: "saved",
+        lastSaved: Date.now()
+      });
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("voyage_active_trip_id", loadedTrip.id);
+      }
+
+      VoyageEventBus.publish("ROUTE_RECALCULATED", loadedTrip);
+    },
+
+    clearTrip: () => {
+      set({
+        trip: null,
+        history: [],
+        future: [],
+        selectedActivityId: null,
+        editingActivityId: null,
+        expandedActivityIds: new Set(),
+        saveStatus: "saved",
+        lastSaved: null
+      });
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("voyage_active_trip_id");
+      }
+    },
 
     initializeFromItinerary: (itinerary, destinationName) => {
       if (!itinerary) return;
@@ -156,11 +284,13 @@ export const useTimelineStore = create<TimelineState>((set, get) => {
         destination: destinationName,
         startDate: formatDate(start),
         endDate: formatDate(end),
-        travelerCount: itinerary.travelers || 2,
+        travelerCount: itinerary.travelers || 1,
         days: mappedDays,
         totalBudget: totalBudgetVal,
         currency: "USD",
         manualExpenses: [],
+        version: 1,
+        status: "draft"
       };
 
       set({
@@ -170,7 +300,13 @@ export const useTimelineStore = create<TimelineState>((set, get) => {
         selectedActivityId: null,
         editingActivityId: null,
         expandedActivityIds: new Set(),
+        saveStatus: "saved",
+        lastSaved: Date.now()
       });
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("voyage_active_trip_id", newTrip.id);
+      }
 
       // Notify route/weather calculation on initialization
       VoyageEventBus.publish("ROUTE_RECALCULATED", newTrip);

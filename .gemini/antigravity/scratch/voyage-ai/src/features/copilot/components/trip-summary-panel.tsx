@@ -22,6 +22,15 @@ export function TripSummaryPanel() {
     { label: "Companions", value: preferences.companions, key: "companions", icon: <Icons.user className="h-4 w-4" /> },
   ];
 
+  if (preferences.companions === "family" || preferences.companions === "friends") {
+    steps.push({
+      label: "Group Size",
+      value: preferences.travelers ? `${preferences.travelers} Travelers` : undefined,
+      key: "travelers",
+      icon: <Icons.user className="h-4 w-4" />
+    });
+  }
+
   const handleStartEdit = (stepIdx: number, currentValue: string) => {
     setEditingStep(stepIdx);
     setEditValue(currentValue);

@@ -3,6 +3,9 @@
 import React, { useEffect } from "react";
 import { useTimelineStore } from "../store/use-timeline-store";
 import { useCopilotStore } from "@/features/copilot/store/use-copilot-store";
+import { useUserContext } from "@/features/auth/context/user-context";
+import { TripDBService } from "@/services/db/trip-db-service";
+import { toast } from "sonner";
 import { TimelineHeader } from "./timeline-header";
 import { TimelineToolbar } from "./timeline-toolbar";
 import { Timeline } from "./timeline";
@@ -35,8 +38,12 @@ export function TripStudio() {
     selectActivity, 
     deleteActivity,
     viewMode,
-    setViewMode
+    setViewMode,
+    saveTripToDB,
+    saveStatus
   } = useTimelineStore();
+  
+  const { user } = useUserContext();
 
   // Initialize the Trip Studio store from the Copilot's generated itinerary
   useEffect(() => {
@@ -44,6 +51,43 @@ export function TripStudio() {
       initializeFromItinerary(itinerary, preferences.destination);
     }
   }, [itinerary, preferences, initializeFromItinerary]);
+
+  // Debounced auto-save effect (2 seconds)
+  useEffect(() => {
+    if (!trip || !user?.id) return;
+    if (saveStatus !== "unsaved") return;
+
+    const timer = setTimeout(async () => {
+      try {
+        await saveTripToDB(user.id, preferences);
+      } catch (err) {
+        console.error("Auto-save error", err);
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [trip, user?.id, preferences, saveStatus, saveTripToDB]);
+
+  // Online connection listener for synchronization
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const handleOnline = async () => {
+      toast.info("Connection restored. Syncing offline changes...");
+      try {
+        await TripDBService.syncOfflineTrips(user.id);
+        if (trip) {
+          await saveTripToDB(user.id, preferences);
+        }
+        toast.success("All changes synchronized with cloud database.");
+      } catch (err) {
+        toast.error("Failed to synchronize some offline changes.");
+      }
+    };
+
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
+  }, [user?.id, trip, preferences, saveTripToDB]);
 
   // Register Command Palette Commands dynamically at mount
   useEffect(() => {

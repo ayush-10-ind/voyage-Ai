@@ -6,6 +6,7 @@ import { QueryProvider } from "./query-provider";
 import { MotionProvider } from "./motion-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { UserProvider } from "@/features/auth/context/user-context";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
@@ -16,12 +17,14 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         enableSystem
         disableTransitionOnChange
       >
-        <TooltipProvider>
-          <MotionProvider>
-            {children}
-          </MotionProvider>
-          <Toaster position="bottom-right" closeButton richColors theme="dark" />
-        </TooltipProvider>
+        <UserProvider>
+          <TooltipProvider>
+            <MotionProvider>
+              {children}
+            </MotionProvider>
+            <Toaster position="bottom-right" closeButton richColors theme="dark" />
+          </TooltipProvider>
+        </UserProvider>
       </ThemeProvider>
     </QueryProvider>
   );

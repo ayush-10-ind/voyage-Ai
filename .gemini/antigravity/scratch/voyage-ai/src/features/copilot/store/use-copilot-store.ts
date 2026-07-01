@@ -20,6 +20,7 @@ interface CopilotState {
   updateItinerary: (itinerary: TripItinerary) => void;
   saveDraft: () => void;
   resetCopilot: () => void;
+  loadFromSavedTrip: (tripData: any) => void;
 }
 
 const QUESTIONS = [
@@ -165,11 +166,11 @@ export const useCopilotStore = create<CopilotState>((set, get) => ({
         accommodationType = "double room";
       } else if (compVal.includes("fam")) {
         companions = "family";
-        travelers = 4;
+        travelers = 3; // Initial guess, will ask next
         accommodationType = "family suite";
       } else if (compVal.includes("friend")) {
         companions = "friends";
-        travelers = 3;
+        travelers = 3; // Initial guess, will ask next
         accommodationType = "shared rooms";
       }
       
@@ -181,18 +182,37 @@ export const useCopilotStore = create<CopilotState>((set, get) => ({
       updatedPrefs.transportationPreference = 
         updatedPrefs.budget === "luxury" ? "private transfers" :
         updatedPrefs.budget === "budget" ? "public transport" : "transit / rideshare";
+    } else if (currentStep === 6) {
+      // Parse traveler count from step 6 (family/friends count)
+      const count = parseInt(answer.replace("+", "")) || 3;
+      updatedPrefs.travelers = count;
     }
 
-    const nextStep = currentStep + 1;
+    let nextStep = currentStep + 1;
+    const hasMoreQuestions = nextStep < QUESTIONS.length || (currentStep === 5 && (updatedPrefs.companions === "family" || updatedPrefs.companions === "friends"));
 
     // 3. Check if we need to ask more questions
-    if (nextStep < QUESTIONS.length) {
+    if (hasMoreQuestions) {
+      let content = QUESTIONS[nextStep];
+      let suggestions = SUGGESTIONS[nextStep];
+
+      if (currentStep === 5) {
+        nextStep = 6;
+        const isFamily = updatedPrefs.companions === "family";
+        content = isFamily 
+          ? "How many family members are travelling?" 
+          : "How many friends are travelling?";
+        suggestions = isFamily 
+          ? ["3", "4", "5", "6+"] 
+          : ["2", "3", "4", "5+"];
+      }
+
       const copilotQuestion: ChatMessage = {
         id: `copilot-${Date.now()}`,
         sender: "copilot",
-        content: QUESTIONS[nextStep],
+        content,
         timestamp: new Date(),
-        suggestions: SUGGESTIONS[nextStep],
+        suggestions,
       };
 
       set({
@@ -205,7 +225,7 @@ export const useCopilotStore = create<CopilotState>((set, get) => ({
       VoyageLogger.info("Navigation", "Transition: Copilot → Trip Generation (Generating custom itinerary via mockCopilotService)");
       set({
         messages: updatedMessages,
-        currentStep: 6, // Generating state
+        currentStep: 7, // Generating state
         preferences: updatedPrefs,
         isGenerating: true,
         isStreaming: true,
@@ -322,6 +342,59 @@ export const useCopilotStore = create<CopilotState>((set, get) => ({
       isStreaming: false,
       streamingText: "",
       draftSaved: false,
+    });
+  },
+
+  loadFromSavedTrip: (tripData) => {
+    const reconstructedItinerary: TripItinerary = {
+      overview: `A premium ${tripData.duration}-day journey in ${tripData.destination}, tailored for a ${tripData.travelStyle} pace with ${tripData.travelerCount} travelers.`,
+      days: (tripData.timeline || []).map((day: any) => ({
+        day: day.dayNumber,
+        title: day.title,
+        activities: day.activities || [],
+        restaurants: day.restaurants || []
+      })),
+      budget: {
+        total: `$${(tripData.finance?.totalBudget || 0).toLocaleString()}`,
+        breakdown: []
+      },
+      hotels: [],
+      packingList: [],
+      hiddenGems: [],
+      safetyTips: [],
+      travelers: tripData.travelerCount || 1,
+      companions: tripData.companionType || "solo"
+    };
+
+    const welcomeMsg: ChatMessage = {
+      id: "welcome",
+      sender: "copilot",
+      content: "Hello! I am your Voyage AI Travel Copilot. Let's design your perfect journey together. First, where would you like to travel?",
+      timestamp: new Date(),
+    };
+
+    set({
+      preferences: {
+        destination: tripData.destination,
+        duration: tripData.duration,
+        companions: tripData.companionType,
+        travelers: tripData.travelerCount,
+        budget: tripData.budget,
+        style: tripData.travelStyle,
+        travelStyle: tripData.travelStyle,
+        interests: tripData.interests || []
+      },
+      itinerary: reconstructedItinerary,
+      currentStep: 7, // Finished state
+      messages: [
+        welcomeMsg,
+        {
+          id: `restored-msg-${Date.now()}`,
+          sender: "copilot",
+          content: `I have successfully restored your trip to ${tripData.destination}! Feel free to make edits to your timeline, activities, or budget above.`,
+          timestamp: new Date()
+        }
+      ]
     });
   },
 }));

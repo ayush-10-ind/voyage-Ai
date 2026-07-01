@@ -13,6 +13,9 @@ import { Icons } from "@/components/ui/icons";
 import { useTimelineStore } from "@/features/timeline/store/use-timeline-store";
 import { useCopilotStore } from "@/features/copilot/store/use-copilot-store";
 
+import Link from "next/link";
+import { useUserContext } from "@/features/auth/context/user-context";
+
 interface LandingViewProps {
   onStartPlanning: (destination?: string) => void;
 }
@@ -21,6 +24,7 @@ export function LandingView({ onStartPlanning }: LandingViewProps) {
   const [showOverlay, setShowOverlay] = useState(false);
   const trip = useTimelineStore((state) => state.trip);
   const { itinerary } = useCopilotStore();
+  const { authenticated, user } = useUserContext();
 
   // Dynamic values
   const destinationName = trip?.destination || "Swiss Alps";
@@ -80,12 +84,50 @@ export function LandingView({ onStartPlanning }: LandingViewProps) {
           className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between p-6 sm:p-12"
         >
           {/* Top Bar / Logo */}
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between w-full pointer-events-auto">
+            <Link href="/" className="flex items-center gap-2">
               <Icons.explore className="h-6 w-6 text-primary animate-pulse" />
               <span className="font-heading text-lg font-bold tracking-wider uppercase text-gradient">
                 Voyage AI
               </span>
+            </Link>
+
+            {/* Navigation Links */}
+            <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-muted-foreground">
+              <Link href="/features" className="hover:text-white transition-colors">Features</Link>
+              <Link href="/about" className="hover:text-white transition-colors">About</Link>
+              <Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link>
+            </nav>
+
+            {/* Auth Buttons */}
+            <div className="flex items-center gap-3">
+              {authenticated ? (
+                <>
+                  <Link href="/dashboard">
+                    <Button variant="outline" size="sm" className="rounded-xl text-xs font-semibold glass">
+                      Dashboard
+                    </Button>
+                  </Link>
+                  <img
+                    src={user?.image || ""}
+                    alt={user?.name || "Avatar"}
+                    className="h-8 w-8 rounded-full border border-white/10"
+                  />
+                </>
+              ) : (
+                <>
+                  <Link href="/sign-in">
+                    <Button variant="ghost" size="sm" className="rounded-xl text-xs font-semibold hover:bg-white/5">
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link href="/sign-up">
+                    <Button size="sm" className="rounded-xl text-xs font-semibold bg-primary hover:bg-primary/90 text-white glow-primary">
+                      Get Started
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
 
