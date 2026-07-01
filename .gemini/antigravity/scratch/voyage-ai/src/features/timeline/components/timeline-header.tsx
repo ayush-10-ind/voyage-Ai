@@ -8,6 +8,15 @@ import { Typography } from "@/components/ui/typography";
 import { toast } from "sonner";
 import { useUserContext } from "@/features/auth/context/user-context";
 import { useCopilotStore } from "@/features/copilot/store/use-copilot-store";
+import { ItineraryQualityValidator } from "@/features/destination-intelligence/engine/quality-validator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
 
 export function TimelineHeader() {
   const { 
@@ -24,6 +33,7 @@ export function TimelineHeader() {
   const { user } = useUserContext();
   const { preferences } = useCopilotStore();
   const [saveMessage, setSaveMessage] = useState("Saved");
+  const [isScorecardOpen, setIsScorecardOpen] = useState(false);
 
   useEffect(() => {
     if (saveStatus === "saving") {
@@ -48,12 +58,15 @@ export function TimelineHeader() {
         }
       };
       updateMessage();
-      const interval = setInterval(updateMessage, 10000); // Update every 10 seconds
+      const interval = setInterval(updateMessage, 10000);
       return () => clearInterval(interval);
     }
   }, [saveStatus, lastSaved]);
 
   if (!trip) return null;
+
+  // Run Itinerary Quality Validator
+  const qualityReport = ItineraryQualityValidator.validate(trip);
 
   const handleShare = () => {
     toast.success("Share link copied to clipboard!");
@@ -110,6 +123,16 @@ export function TimelineHeader() {
               {saveMessage}
             </span>
           )}
+
+          {/* Quality Score Badge */}
+          <span
+            onClick={() => setIsScorecardOpen(true)}
+            className="text-[10px] text-primary bg-primary/15 hover:bg-primary/25 border border-primary/30 px-2 py-0.5 rounded-full font-semibold cursor-pointer transition-all flex items-center gap-1"
+            title="Click to view Itinerary Quality Scorecard"
+          >
+            <Icons.star className="h-3 w-3 fill-primary text-primary" />
+            {qualityReport.score}% Quality
+          </span>
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
@@ -188,6 +211,61 @@ export function TimelineHeader() {
           Save Trip
         </Button>
       </div>
+
+      {/* Quality Scorecard Dialog */}
+      <Dialog open={isScorecardOpen} onOpenChange={setIsScorecardOpen}>
+        <DialogContent className="border border-white/10 bg-[#070b19]/95 text-white backdrop-blur-xl rounded-2xl p-5 w-full max-w-sm shadow-2xl z-50 text-left">
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="text-base font-bold text-white flex items-center gap-2">
+              <Icons.star className="h-4 w-4 fill-primary text-primary" />
+              Itinerary Quality Scorecard
+            </DialogTitle>
+            <DialogDescription className="text-zinc-400 text-xs">
+              Automated validation against local professional travel criteria.
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Large Circle Score Display */}
+          <div className="flex items-center justify-center py-5">
+            <div className="relative h-24 w-24 rounded-full border-4 border-white/5 flex flex-col items-center justify-center bg-black/25 shadow-inner">
+              <span className="text-2xl font-black text-primary leading-none">
+                {qualityReport.score}%
+              </span>
+              <span className="text-[9px] uppercase tracking-wider font-semibold text-zinc-500 mt-1">
+                Score
+              </span>
+              {/* Outer glowing trace */}
+              <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-pulse pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Checklist Checks */}
+          <div className="space-y-3 py-2 max-h-[220px] overflow-y-auto pr-1">
+            {qualityReport.checks.map(check => (
+              <div key={check.id} className="flex items-start gap-2.5 text-xs">
+                {check.passed ? (
+                  <Icons.check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                ) : (
+                  <Icons.warning className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                )}
+                <span className={check.passed ? "text-zinc-300" : "text-zinc-400 italic"}>
+                  {check.message}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter className="pt-4 border-t border-white/5 flex justify-end">
+            <Button
+              size="sm"
+              onClick={() => setIsScorecardOpen(false)}
+              className="rounded-xl text-xs bg-primary hover:bg-primary/90 text-white font-semibold glow-primary"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -19,19 +19,170 @@ const MOCK_DESTINATIONS: Record<string, DestinationKnowledge> = {
     transportation: ["Auto-rickshaws", "Cycle-rickshaws", "Ola Cabs", "Tonga rides near Taj Mahal"],
     averageCosts: { accommodation: "$40/night", food: "$12/day", transit: "$6/day", sightseeing: "$25/day" },
     mustVisitAttractions: [
-      { title: "Taj Mahal", description: "The iconic white marble mausoleum built by Emperor Shah Jahan in memory of his favorite wife.", cost: "$15", averageVisitDuration: "3h", bestTimeOfDay: "sunrise", coordinates: { lat: 27.1751, lng: 78.0421 }, openingHours: "06:00 AM - 07:00 PM (Closed on Fridays)" },
-      { title: "Agra Fort", description: "A massive 16th-century red sandstone fortress that served as the main residence of the Mughal Emperors.", cost: "$8", averageVisitDuration: "2h", bestTimeOfDay: "morning", coordinates: { lat: 27.1795, lng: 78.0211 }, openingHours: "06:00 AM - 06:00 PM" },
-      { title: "Fatehpur Sikri", description: "A historic fortified city founded in 1569 by Emperor Akbar, located 40km from Agra. Home to Buland Darwaza.", cost: "$8", averageVisitDuration: "3h", bestTimeOfDay: "afternoon", coordinates: { lat: 27.0945, lng: 77.6675 }, openingHours: "06:00 AM - 06:00 PM" },
-      { title: "Mehtab Bagh", description: "The Moonlight Garden located opposite the Taj Mahal across the Yamuna River, offering iconic view options.", cost: "$4", averageVisitDuration: "1.5h", bestTimeOfDay: "sunset", coordinates: { lat: 27.1798, lng: 78.0435 }, openingHours: "06:00 AM - 06:00 PM" },
-      { title: "Itmad-ud-Daulah", description: "Often called the 'Baby Taj', this exquisite marble tomb was built for Mumtaz Mahal's grandfather.", cost: "$4", averageVisitDuration: "1h", bestTimeOfDay: "morning", coordinates: { lat: 27.1928, lng: 78.0315 }, openingHours: "06:00 AM - 06:00 PM" },
-      { title: "Jama Masjid", description: "A beautifully decorated 17th-century mosque built by Shah Jahan's daughter Jahanara Begum.", cost: "Free", averageVisitDuration: "1h", bestTimeOfDay: "afternoon", coordinates: { lat: 27.1812, lng: 78.0162 }, openingHours: "05:00 AM - 09:00 PM" }
+      { 
+        title: "Taj Mahal", 
+        description: "The iconic white marble mausoleum built by Emperor Shah Jahan in memory of his favorite wife.", 
+        cost: "$15", 
+        averageVisitDuration: "3h", 
+        bestTimeOfDay: "sunrise", 
+        coordinates: { lat: 27.1751, lng: 78.0421 }, 
+        openingHours: "06:00 AM - 07:00 PM (Closed on Fridays)",
+        categories: ["landmark", "culture", "photography"],
+        popularity: 99,
+        accessibility: ["wheelchair_ramps", "guided_audio"],
+        weatherDependency: "high",
+        photographyScore: 10
+      },
+      { 
+        title: "Agra Fort", 
+        description: "A massive 16th-century red sandstone fortress that served as the main residence of the Mughal Emperors.", 
+        cost: "$8", 
+        averageVisitDuration: "2h", 
+        bestTimeOfDay: "morning", 
+        coordinates: { lat: 27.1795, lng: 78.0211 }, 
+        openingHours: "06:00 AM - 06:00 PM",
+        categories: ["landmark", "culture"],
+        popularity: 90,
+        accessibility: ["guided_tours"],
+        weatherDependency: "low",
+        photographyScore: 8
+      },
+      { 
+        title: "Fatehpur Sikri", 
+        description: "A historic fortified city founded in 1569 by Emperor Akbar, located 40km from Agra. Home to Buland Darwaza.", 
+        cost: "$8", 
+        averageVisitDuration: "3h", 
+        bestTimeOfDay: "afternoon", 
+        coordinates: { lat: 27.0945, lng: 77.6675 }, 
+        openingHours: "06:00 AM - 06:00 PM",
+        categories: ["landmark", "culture"],
+        popularity: 85,
+        accessibility: ["guided_tours"],
+        weatherDependency: "high",
+        photographyScore: 8
+      },
+      { 
+        title: "Mehtab Bagh", 
+        description: "The Moonlight Garden located opposite the Taj Mahal across the Yamuna River, offering iconic views.", 
+        cost: "$4", 
+        averageVisitDuration: "1.5h", 
+        bestTimeOfDay: "sunset", 
+        coordinates: { lat: 27.1798, lng: 78.0435 }, 
+        openingHours: "06:00 AM - 06:00 PM",
+        categories: ["nature", "photography"],
+        popularity: 80,
+        accessibility: ["wheelchair_ramps"],
+        weatherDependency: "high",
+        photographyScore: 9,
+        isRelaxing: true
+      },
+      { 
+        title: "Itmad-ud-Daulah", 
+        description: "Often called the 'Baby Taj', this exquisite marble tomb was built for Mumtaz Mahal's grandfather.", 
+        cost: "$4", 
+        averageVisitDuration: "1h", 
+        bestTimeOfDay: "morning", 
+        coordinates: { lat: 27.1928, lng: 78.0315 }, 
+        openingHours: "06:00 AM - 06:00 PM",
+        categories: ["landmark", "culture"],
+        popularity: 78,
+        accessibility: [],
+        weatherDependency: "low",
+        photographyScore: 7
+      },
+      { 
+        title: "Jama Masjid", 
+        description: "A beautifully decorated 17th-century mosque built by Shah Jahan's daughter Jahanara Begum.", 
+        cost: "Free", 
+        averageVisitDuration: "1h", 
+        bestTimeOfDay: "afternoon", 
+        coordinates: { lat: 27.1812, lng: 78.0162 }, 
+        openingHours: "05:00 AM - 09:00 PM",
+        categories: ["landmark", "culture"],
+        popularity: 75,
+        accessibility: [],
+        weatherDependency: "low",
+        photographyScore: 7
+      }
     ],
     hiddenGems: [
-      { title: "Sheroes Hangout", description: "A heartwarming, activist-run cafe managed by courageous survivors of acid attacks, offering tasty snacks and stories.", cost: "Pay what you wish", averageVisitDuration: "1h", bestTimeOfDay: "afternoon", coordinates: { lat: 27.1652, lng: 78.0385 }, openingHours: "09:00 AM - 10:00 PM" },
-      { title: "Korai Village", description: "A tribal hamlet on the outskirts of Agra showing the lifestyle of the Kalandar community.", cost: "$10", averageVisitDuration: "2h", bestTimeOfDay: "morning", coordinates: { lat: 27.1121, lng: 77.8202 }, openingHours: "08:00 AM - 05:00 PM" },
-      { title: "Chini Ka Rauza", description: "Tomb of Afzal Khan, a poet-scholar, decorated with brilliant glazed Persian tiles.", cost: "Free", averageVisitDuration: "1h", bestTimeOfDay: "afternoon", coordinates: { lat: 27.2012, lng: 78.0411 }, openingHours: "06:00 AM - 06:00 PM" },
-      { title: "Keetham Lake", description: "A peaceful lake and scenic bird sanctuary, also hosting the Agra Bear Rescue Facility.", cost: "$5", averageVisitDuration: "3h", bestTimeOfDay: "morning", coordinates: { lat: 27.2512, lng: 77.8415 }, openingHours: "06:00 AM - 06:00 PM" },
-      { title: "Mughal Heritage Walk", description: "A community-based tourism initiative taking visitors through historic Kachhpura village with views of the Taj.", cost: "$12", averageVisitDuration: "2h", bestTimeOfDay: "sunset", coordinates: { lat: 27.1821, lng: 78.0452 }, openingHours: "07:00 AM - 06:00 PM" }
+      { 
+        title: "Sheroes Hangout", 
+        description: "A heartwarming, activist-run cafe managed by courageous survivors of acid attacks, offering tasty snacks.", 
+        cost: "Free", 
+        averageVisitDuration: "1h", 
+        bestTimeOfDay: "afternoon", 
+        coordinates: { lat: 27.1652, lng: 78.0385 }, 
+        openingHours: "09:00 AM - 10:00 PM",
+        categories: ["food", "culture"],
+        popularity: 70,
+        accessibility: ["wheelchair_ramps"],
+        weatherDependency: "low",
+        photographyScore: 6,
+        isHiddenGem: true
+      },
+      { 
+        title: "Korai Village", 
+        description: "A tribal hamlet on the outskirts of Agra showing the lifestyle of the Kalandar community.", 
+        cost: "$10", 
+        averageVisitDuration: "2h", 
+        bestTimeOfDay: "morning", 
+        coordinates: { lat: 27.1121, lng: 77.8202 }, 
+        openingHours: "08:00 AM - 05:00 PM",
+        categories: ["culture", "adventure"],
+        popularity: 65,
+        accessibility: [],
+        weatherDependency: "high",
+        photographyScore: 7,
+        isHiddenGem: true
+      },
+      { 
+        title: "Chini Ka Rauza", 
+        description: "Tomb of Afzal Khan, a poet-scholar, decorated with brilliant glazed Persian tiles.", 
+        cost: "Free", 
+        averageVisitDuration: "1h", 
+        bestTimeOfDay: "afternoon", 
+        coordinates: { lat: 27.2012, lng: 78.0411 }, 
+        openingHours: "06:00 AM - 06:00 PM",
+        categories: ["landmark", "culture"],
+        popularity: 62,
+        accessibility: [],
+        weatherDependency: "low",
+        photographyScore: 7,
+        isHiddenGem: true
+      },
+      { 
+        title: "Keetham Lake", 
+        description: "A peaceful lake and scenic bird sanctuary, also hosting the Agra Bear Rescue Facility.", 
+        cost: "$5", 
+        averageVisitDuration: "3h", 
+        bestTimeOfDay: "morning", 
+        coordinates: { lat: 27.2512, lng: 77.8415 }, 
+        openingHours: "06:00 AM - 06:00 PM",
+        categories: ["nature", "family"],
+        popularity: 60,
+        accessibility: ["wheelchair_ramps"],
+        weatherDependency: "high",
+        photographyScore: 8,
+        isRelaxing: true,
+        isHiddenGem: true
+      },
+      { 
+        title: "Mughal Heritage Walk", 
+        description: "A community-based tourism initiative taking visitors through historic Kachhpura village with views of the Taj.", 
+        cost: "$12", 
+        averageVisitDuration: "2h", 
+        bestTimeOfDay: "sunset", 
+        coordinates: { lat: 27.1821, lng: 78.0452 }, 
+        openingHours: "07:00 AM - 06:00 PM",
+        categories: ["culture", "photography"],
+        popularity: 68,
+        accessibility: [],
+        weatherDependency: "high",
+        photographyScore: 9,
+        isPhotoSpot: true,
+        isHiddenGem: true
+      }
     ],
     dining: {
       streetFood: [
@@ -83,7 +234,17 @@ const MOCK_DESTINATIONS: Record<string, DestinationKnowledge> = {
         metroStations: ["Agra Fort Metro Station (200m away)"],
         emergencyServices: ["Fort Police Outpost (50m away)", "Agra Cantonment Hospital (3 km away)"]
       }
-    }
+    },
+    seasonalActivities: {
+      spring: ["Taj Mahotsav arts & crafts celebrations", "Yamuna riverside afternoon walking tour"],
+      winter: ["Early morning misty Taj sunrise photo session", "Agra rural village heritage tours"],
+      autumn: ["Sharad Poornima night Taj viewing", "Ram Barat festival parade walk"],
+      summer: ["Air-conditioned Mughal Museum exploration", "Late evening Mehtab Bagh cool breeze stroll"]
+    },
+    events: [
+      { title: "Taj Mahotsav Carnival", description: "A grand 10-day festival showcasing Indian crafts, dance, arts, and Mughlai food styles.", month: 2, category: "festival", cost: "$1" },
+      { title: "Sharad Poornima Taj Viewing", description: "Night viewing of the Taj Mahal under the full moon light.", month: 10, category: "festival", cost: "$20" }
+    ]
   },
   paris: {
     destination: "Paris",
@@ -102,14 +263,98 @@ const MOCK_DESTINATIONS: Record<string, DestinationKnowledge> = {
     transportation: ["Metro", "RER Trains", "Vélib' (bikeshare)", "Buses"],
     averageCosts: { accommodation: "$150/night", food: "$40/day", transit: "$10/day", sightseeing: "$35/day" },
     mustVisitAttractions: [
-      { title: "Eiffel Tower", description: "The iconic wrought-iron lattice tower on the Champ de Mars, named after engineer Gustave Eiffel.", cost: "$28", averageVisitDuration: "2h", bestTimeOfDay: "afternoon", coordinates: { lat: 48.8584, lng: 2.2945 }, openingHours: "09:30 AM - 11:45 PM" },
-      { title: "Louvre Museum", description: "The world's largest art museum and historic monument, home to the Mona Lisa and Venus de Milo.", cost: "$22", averageVisitDuration: "4h", bestTimeOfDay: "morning", coordinates: { lat: 48.8606, lng: 2.3376 }, openingHours: "09:00 AM - 06:00 PM (Closed on Tuesdays)" },
-      { title: "Notre Dame Cathedral", description: "A historic Catholic cathedral on the Île de la Cité, a masterpiece of French Gothic architecture.", cost: "Free", averageVisitDuration: "1h", bestTimeOfDay: "morning", coordinates: { lat: 48.8530, lng: 2.3499 }, openingHours: "08:00 AM - 06:45 PM" },
-      { title: "Montmartre", description: "A historic hill district known for its artistic history, the white-domed Sacré-Cœur Basilica, and sweeping views.", cost: "Free", averageVisitDuration: "3h", bestTimeOfDay: "sunset", coordinates: { lat: 48.8867, lng: 2.3431 }, openingHours: "24/7 (Basilica open 06:00 AM - 10:30 PM)" }
+      { 
+        title: "Eiffel Tower", 
+        description: "The iconic wrought-iron lattice tower on the Champ de Mars, named after engineer Gustave Eiffel.", 
+        cost: "$28", 
+        averageVisitDuration: "2h", 
+        bestTimeOfDay: "afternoon", 
+        coordinates: { lat: 48.8584, lng: 2.2945 }, 
+        openingHours: "09:30 AM - 11:45 PM",
+        categories: ["landmark", "photography"],
+        popularity: 99,
+        accessibility: ["elevators", "wheelchair_accessible"],
+        weatherDependency: "high",
+        photographyScore: 10,
+        isPhotoSpot: true
+      },
+      { 
+        title: "Louvre Museum", 
+        description: "The world's largest art museum and historic monument, home to the Mona Lisa and Venus de Milo.", 
+        cost: "$22", 
+        averageVisitDuration: "4h", 
+        bestTimeOfDay: "morning", 
+        coordinates: { lat: 48.8606, lng: 2.3376 }, 
+        openingHours: "09:00 AM - 06:00 PM (Closed on Tuesdays)",
+        categories: ["museum", "culture"],
+        popularity: 98,
+        accessibility: ["wheelchair_ramps", "braille_guides"],
+        weatherDependency: "low",
+        photographyScore: 8
+      },
+      { 
+        title: "Notre Dame Cathedral", 
+        description: "A historic Catholic cathedral on the Île de la Cité, a masterpiece of French Gothic architecture.", 
+        cost: "Free", 
+        averageVisitDuration: "1h", 
+        bestTimeOfDay: "morning", 
+        coordinates: { lat: 48.8530, lng: 2.3499 }, 
+        openingHours: "08:00 AM - 06:45 PM",
+        categories: ["landmark", "culture"],
+        popularity: 92,
+        accessibility: ["guided_tours"],
+        weatherDependency: "low",
+        photographyScore: 8
+      },
+      { 
+        title: "Montmartre", 
+        description: "A historic hill district known for its artistic history, the white-domed Sacré-Cœur Basilica, and sweeping views.", 
+        cost: "Free", 
+        averageVisitDuration: "3h", 
+        bestTimeOfDay: "sunset", 
+        coordinates: { lat: 48.8867, lng: 2.3431 }, 
+        openingHours: "24/7 (Basilica open 06:00 AM - 10:30 PM)",
+        categories: ["culture", "nature", "photography"],
+        popularity: 88,
+        accessibility: ["funicular_access"],
+        weatherDependency: "high",
+        photographyScore: 9,
+        isPhotoSpot: true
+      }
     ],
     hiddenGems: [
-      { title: "Shakespeare and Company", description: "The legendary English-language bookstore on the Left Bank, a gathering place for writers since the 1920s.", cost: "Free", averageVisitDuration: "1h", bestTimeOfDay: "morning", coordinates: { lat: 48.8526, lng: 2.3471 }, openingHours: "10:00 AM - 08:00 PM" },
-      { title: "Promenade Plantée", description: "The world's first elevated parkway, built on a historic railway viaduct, lined with beautiful flowers and views.", cost: "Free", averageVisitDuration: "2h", bestTimeOfDay: "morning", coordinates: { lat: 48.8471, lng: 2.3745 }, openingHours: "08:00 AM - 07:30 PM" }
+      { 
+        title: "Shakespeare and Company", 
+        description: "The legendary English-language bookstore on the Left Bank, a gathering place for writers since the 1920s.", 
+        cost: "Free", 
+        averageVisitDuration: "1h", 
+        bestTimeOfDay: "morning", 
+        coordinates: { lat: 48.8526, lng: 2.3471 }, 
+        openingHours: "10:00 AM - 08:00 PM",
+        categories: ["culture", "shopping"],
+        popularity: 75,
+        accessibility: [],
+        weatherDependency: "low",
+        photographyScore: 8,
+        isRelaxing: true,
+        isHiddenGem: true
+      },
+      { 
+        title: "Promenade Plantée", 
+        description: "The world's first elevated parkway, built on a historic railway viaduct, lined with beautiful flowers.", 
+        cost: "Free", 
+        averageVisitDuration: "2h", 
+        bestTimeOfDay: "morning", 
+        coordinates: { lat: 48.8471, lng: 2.3745 }, 
+        openingHours: "08:00 AM - 07:30 PM",
+        categories: ["nature", "photography"],
+        popularity: 72,
+        accessibility: ["elevators"],
+        weatherDependency: "high",
+        photographyScore: 8,
+        isRelaxing: true,
+        isHiddenGem: true
+      }
     ],
     dining: {
       streetFood: [
@@ -152,7 +397,17 @@ const MOCK_DESTINATIONS: Record<string, DestinationKnowledge> = {
         metroStations: ["Bir-Hakeim Station (Line 6) (5m walk)", "Champ de Mars Tour Eiffel Station (RER C)"],
         emergencyServices: ["Eiffel Tower Security Center (50m away)", "Hôpital Necker (2.5 km away)"]
       }
-    }
+    },
+    seasonalActivities: {
+      spring: ["Jardin des Plantes cherry blossom stroll", "Outdoor cafe terrace breakfast in Saint-Germain"],
+      winter: ["Paris Christmas Markets shopping on Champs-Élysées", "Ice skating under the Grand Palais glass roof"],
+      autumn: ["Bois de Boulogne foliage walks", "Warm hot chocolate at Angelina on rainy afternoons"],
+      summer: ["Seine river banks sunbathing at Paris Plages", "Open-air cinema screenings in Parc de la Villette"]
+    },
+    events: [
+      { title: "Paris Christmas Markets", description: "Bustling winter markets with wooden chalets, mulled wine, hot crepes, and handmade crafts.", month: 12, category: "festival", cost: "Free" },
+      { title: "Fête de la Musique", description: "Free live music concerts throughout the streets, parks, and squares of Paris.", month: 6, category: "concert", cost: "Free" }
+    ]
   },
   tokyo: {
     destination: "Tokyo",
@@ -171,14 +426,97 @@ const MOCK_DESTINATIONS: Record<string, DestinationKnowledge> = {
     transportation: ["Tokyo Metro", "JR Yamanote Line", "Toei Subway", "Suica/Pasmo IC Cards"],
     averageCosts: { accommodation: "$120/night", food: "$30/day", transit: "$8/day", sightseeing: "$20/day" },
     mustVisitAttractions: [
-      { title: "Shibuya Crossing", description: "The famous intersection and busiest pedestrian crossing in the world, surrounded by neon screens.", cost: "Free", averageVisitDuration: "1h", bestTimeOfDay: "night", coordinates: { lat: 35.6595, lng: 139.7005 }, openingHours: "24/7" },
-      { title: "Asakusa Temple (Senso-ji)", description: "Tokyo's oldest and most significant Buddhist temple, featuring the massive Kaminarimon Gate.", cost: "Free", averageVisitDuration: "1.5h", bestTimeOfDay: "morning", coordinates: { lat: 35.7148, lng: 139.7967 }, openingHours: "06:00 AM - 05:00 PM (Grounds open 24/7)" },
-      { title: "Akihabara Electric Town", description: "The world-famous center of Otaku culture, anime shops, video game arcades, and electronic stores.", cost: "Free", averageVisitDuration: "3h", bestTimeOfDay: "afternoon", coordinates: { lat: 35.6997, lng: 139.7715 }, openingHours: "10:00 AM - 08:00 PM" },
-      { title: "teamLab Planets", description: "An incredible sensory museum where visitors walk through water and immersive digital art rooms.", cost: "$32", averageVisitDuration: "2h", bestTimeOfDay: "morning", coordinates: { lat: 35.6491, lng: 139.7898 }, openingHours: "09:00 AM - 10:00 PM" }
+      { 
+        title: "Shibuya Crossing", 
+        description: "The famous intersection and busiest pedestrian crossing in the world, surrounded by neon screens.", 
+        cost: "Free", 
+        averageVisitDuration: "1h", 
+        bestTimeOfDay: "night", 
+        coordinates: { lat: 35.6595, lng: 139.7005 }, 
+        openingHours: "24/7",
+        categories: ["landmark", "photography"],
+        popularity: 99,
+        accessibility: ["elevators_in_stations"],
+        weatherDependency: "low",
+        photographyScore: 9,
+        isPhotoSpot: true
+      },
+      { 
+        title: "Asakusa Temple (Senso-ji)", 
+        description: "Tokyo's oldest and most significant Buddhist temple, featuring the massive Kaminarimon Gate.", 
+        cost: "Free", 
+        averageVisitDuration: "1.5h", 
+        bestTimeOfDay: "morning", 
+        coordinates: { lat: 35.7148, lng: 139.7967 }, 
+        openingHours: "06:00 AM - 05:00 PM",
+        categories: ["landmark", "culture"],
+        popularity: 98,
+        accessibility: ["flat_paths", "wheelchair_friendly"],
+        weatherDependency: "low",
+        photographyScore: 9
+      },
+      { 
+        title: "Akihabara Electric Town", 
+        description: "The world-famous center of Otaku culture, anime shops, video game arcades, and electronic stores.", 
+        cost: "Free", 
+        averageVisitDuration: "3h", 
+        bestTimeOfDay: "afternoon", 
+        coordinates: { lat: 35.6997, lng: 139.7715 }, 
+        openingHours: "10:00 AM - 08:00 PM",
+        categories: ["landmark", "shopping"],
+        popularity: 95,
+        accessibility: [],
+        weatherDependency: "low",
+        photographyScore: 8
+      },
+      { 
+        title: "teamLab Planets", 
+        description: "An incredible sensory museum where visitors walk through water and immersive digital art rooms.", 
+        cost: "$32", 
+        averageVisitDuration: "2h", 
+        bestTimeOfDay: "morning", 
+        coordinates: { lat: 35.6491, lng: 139.7898 }, 
+        openingHours: "09:00 AM - 10:00 PM",
+        categories: ["museum", "photography"],
+        popularity: 96,
+        accessibility: ["partially_accessible_staff_support"],
+        weatherDependency: "low",
+        photographyScore: 10,
+        isPhotoSpot: true
+      }
     ],
     hiddenGems: [
-      { title: "Yanaka Ginza", description: "A retro, low-rise shopping street preserved since the mid-20th century, famous for street snacks and cats.", cost: "Free", averageVisitDuration: "1.5h", bestTimeOfDay: "afternoon", coordinates: { lat: 35.7278, lng: 139.7681 }, openingHours: "10:00 AM - 06:00 PM" },
-      { title: "Golden Gai", description: "A network of six narrow alleys lined with over 200 tiny, themed micro-bars in the heart of Shinjuku.", cost: "$5 cover charge typical", averageVisitDuration: "2h", bestTimeOfDay: "night", coordinates: { lat: 35.6939, lng: 139.7048 }, openingHours: "07:00 PM - 03:00 AM" }
+      { 
+        title: "Yanaka Ginza", 
+        description: "A retro, low-rise shopping street preserved since the mid-20th century, famous for street snacks.", 
+        cost: "Free", 
+        averageVisitDuration: "1.5h", 
+        bestTimeOfDay: "afternoon", 
+        coordinates: { lat: 35.7278, lng: 139.7681 }, 
+        openingHours: "10:00 AM - 06:00 PM",
+        categories: ["shopping", "culture"],
+        popularity: 70,
+        accessibility: [],
+        weatherDependency: "high",
+        photographyScore: 8,
+        isRelaxing: true,
+        isHiddenGem: true
+      },
+      { 
+        title: "Golden Gai", 
+        description: "A network of six narrow alleys lined with over 200 tiny, themed micro-bars in the heart of Shinjuku.", 
+        cost: "$5", 
+        averageVisitDuration: "2h", 
+        bestTimeOfDay: "night", 
+        coordinates: { lat: 35.6939, lng: 139.7048 }, 
+        openingHours: "07:00 PM - 03:00 AM",
+        categories: ["nightlife", "food"],
+        popularity: 72,
+        accessibility: [],
+        weatherDependency: "low",
+        photographyScore: 8,
+        isHiddenGem: true
+      }
     ],
     dining: {
       streetFood: [
@@ -221,7 +559,17 @@ const MOCK_DESTINATIONS: Record<string, DestinationKnowledge> = {
         metroStations: ["JR Shibuya Station (1m walk)", "Shibuya Subway (Hanzomon/Fukutoshin Lines)"],
         emergencyServices: ["Shibuya Crossing Koban (Police Box) (20m away)", "Tokyo Metropolitan Hiroo Hospital (2.5 km away)"]
       }
-    }
+    },
+    seasonalActivities: {
+      spring: ["Hanami (cherry blossom viewing) picnic in Yoyogi Park", "Shinjuku Gyoen botanical stroll under sakura"],
+      winter: ["Roppongi Hills winter illuminations night walk", "Warm ramen crawls in Ikebukuro on snowy evenings"],
+      autumn: ["Rikugien Garden maple leaves light shows", "Autumn food stalls at Meiji Shrine park roads"],
+      summer: ["Watching Sumida River firework festival in traditional Yukatas", "Mount Mitake hiking escape from humidity"]
+    },
+    events: [
+      { title: "Cherry Blossom Hanami Festival", description: "Breathtaking peak sakura blossoms in parks with outdoor lanterns and food stalls.", month: 4, category: "festival", cost: "Free" },
+      { title: "Roppongi Hills Winter Illuminations", description: "Over 700,000 blue and white LED lights illuminating the trees of Keyakizaka street.", month: 12, category: "exhibition", cost: "Free" }
+    ]
   },
   ladakh: {
     destination: "Ladakh",
@@ -240,14 +588,96 @@ const MOCK_DESTINATIONS: Record<string, DestinationKnowledge> = {
     transportation: ["Shared Taxi", "Private Bullet/Bikes", "Local Bus"],
     averageCosts: { accommodation: "$35/night", food: "$10/day", transit: "$15/day", sightseeing: "$5/day" },
     mustVisitAttractions: [
-      { title: "Pangong Lake", description: "A high-altitude endorheic lake famous for its changing colors, stretching from India to China.", cost: "$1", averageVisitDuration: "4h", bestTimeOfDay: "sunrise", coordinates: { lat: 34.0259, lng: 78.4735 }, openingHours: "24/7" },
-      { title: "Nubra Valley", description: "A cold high-altitude desert famous for its sand dunes, Bactrian double-humped camels, and Diskit Monastery.", cost: "$2", averageVisitDuration: "5h", bestTimeOfDay: "afternoon", coordinates: { lat: 34.5828, lng: 77.5583 }, openingHours: "24/7" },
-      { title: "Khardung La", description: "One of the highest motorable mountain passes in the world, situated at 5,359 meters elevation.", cost: "Free", averageVisitDuration: "45m", bestTimeOfDay: "morning", coordinates: { lat: 34.2787, lng: 77.6047 }, openingHours: "24/7" },
-      { title: "Magnetic Hill", description: "A gravity hill where vehicles appear to roll uphill against gravity, surrounded by stunning vistas.", cost: "Free", averageVisitDuration: "1h", bestTimeOfDay: "afternoon", coordinates: { lat: 34.1685, lng: 77.4208 }, openingHours: "24/7" }
+      { 
+        title: "Pangong Lake", 
+        description: "A high-altitude endorheic lake famous for its changing colors, stretching from India to China.", 
+        cost: "$1", 
+        averageVisitDuration: "4h", 
+        bestTimeOfDay: "sunrise", 
+        coordinates: { lat: 34.0259, lng: 78.4735 }, 
+        openingHours: "24/7",
+        categories: ["nature", "photography"],
+        popularity: 95,
+        accessibility: [],
+        weatherDependency: "high",
+        photographyScore: 10,
+        isPhotoSpot: true
+      },
+      { 
+        title: "Nubra Valley", 
+        description: "A cold high-altitude desert famous for its sand dunes, Bactrian double-humped camels, and Diskit Monastery.", 
+        cost: "$2", 
+        averageVisitDuration: "5h", 
+        bestTimeOfDay: "afternoon", 
+        coordinates: { lat: 34.5828, lng: 77.5583 }, 
+        openingHours: "24/7",
+        categories: ["nature", "adventure"],
+        popularity: 90,
+        accessibility: [],
+        weatherDependency: "high",
+        photographyScore: 9
+      },
+      { 
+        title: "Khardung La", 
+        description: "One of the highest motorable mountain passes in the world, situated at 5,359 meters elevation.", 
+        cost: "Free", 
+        averageVisitDuration: "45m", 
+        bestTimeOfDay: "morning", 
+        coordinates: { lat: 34.2787, lng: 77.6047 }, 
+        openingHours: "24/7",
+        categories: ["landmark", "adventure"],
+        popularity: 92,
+        accessibility: [],
+        weatherDependency: "high",
+        photographyScore: 8
+      },
+      { 
+        title: "Magnetic Hill", 
+        description: "A gravity hill where vehicles appear to roll uphill against gravity, surrounded by stunning vistas.", 
+        cost: "Free", 
+        averageVisitDuration: "1h", 
+        bestTimeOfDay: "afternoon", 
+        coordinates: { lat: 34.1685, lng: 77.4208 }, 
+        openingHours: "24/7",
+        categories: ["landmark"],
+        popularity: 88,
+        accessibility: [],
+        weatherDependency: "low",
+        photographyScore: 7
+      }
     ],
     hiddenGems: [
-      { title: "Turtuk Village", description: "A beautiful, scenic Baltic village along the Shyok River near the Pakistan border, opened to tourists in 2010.", cost: "Free", averageVisitDuration: "3h", bestTimeOfDay: "morning", coordinates: { lat: 34.8452, lng: 76.8335 }, openingHours: "24/7" },
-      { title: "Lamayuru Moonland", description: "An astonishing geographical formation with lunar-like clay topography, hosting one of Ladakh's oldest monasteries.", cost: "Free", averageVisitDuration: "2h", bestTimeOfDay: "sunset", coordinates: { lat: 34.2831, lng: 76.7761 }, openingHours: "06:00 AM - 07:00 PM" }
+      { 
+        title: "Turtuk Village", 
+        description: "A beautiful, scenic Baltic village along the Shyok River near the Pakistan border, opened to tourists in 2010.", 
+        cost: "Free", 
+        averageVisitDuration: "3h", 
+        bestTimeOfDay: "morning", 
+        coordinates: { lat: 34.8452, lng: 76.8335 }, 
+        openingHours: "24/7",
+        categories: ["culture", "nature"],
+        popularity: 68,
+        accessibility: [],
+        weatherDependency: "high",
+        photographyScore: 9,
+        isRelaxing: true,
+        isHiddenGem: true
+      },
+      { 
+        title: "Lamayuru Moonland", 
+        description: "An astonishing geographical formation with lunar-like clay topography, hosting one of Ladakh's oldest monasteries.", 
+        cost: "Free", 
+        averageVisitDuration: "2h", 
+        bestTimeOfDay: "sunset", 
+        coordinates: { lat: 34.2831, lng: 76.7761 }, 
+        openingHours: "06:00 AM - 07:00 PM",
+        categories: ["nature", "culture", "photography"],
+        popularity: 65,
+        accessibility: [],
+        weatherDependency: "high",
+        photographyScore: 9,
+        isHiddenGem: true
+      }
     ],
     dining: {
       streetFood: [
@@ -290,7 +720,17 @@ const MOCK_DESTINATIONS: Record<string, DestinationKnowledge> = {
         metroStations: ["None (Nearest railway station is Jammu Tawi, 700km away)"],
         emergencyServices: ["Tangste Medical Outpost (45 km away)", "Tangste Police Station (45 km away)"]
       }
-    }
+    },
+    seasonalActivities: {
+      spring: ["Apricot blossom viewing in Sham Valley", "Leh market walking and early season setup"],
+      winter: ["Snow leopard trekking in Hemis National Park", "Chadartrek on frozen Zanskar river on freezing days"],
+      autumn: ["Autumn harvesting festivals in local villages", "Scenic drive through golden poplar trees"],
+      summer: ["Rafting on the Indus river confluence", "Stargazing and camping at high-altitude lakes"]
+    },
+    events: [
+      { title: "Hemis Festival", description: "Bustling monastery festival with sacred cham mask dances and colorful local market setups.", month: 6, category: "festival", cost: "Free" },
+      { title: "Ladakh Festival", description: "A week-long celebration of Ladakhi performing arts, archery, and traditional polo matches in Leh.", month: 9, category: "festival", cost: "Free" }
+    ]
   },
   jaipur: {
     destination: "Jaipur",
@@ -309,18 +749,156 @@ const MOCK_DESTINATIONS: Record<string, DestinationKnowledge> = {
     transportation: ["E-rickshaws", "Uber Cabs", "Jaipur Metro", "Jaipur City Bus"],
     averageCosts: { accommodation: "$45/night", food: "$15/day", transit: "$8/day", sightseeing: "$20/day" },
     mustVisitAttractions: [
-      { title: "Hawa Mahal", description: "The famous 'Palace of Winds' built in red and pink sandstone with 953 small casements.", cost: "$4", averageVisitDuration: "1h", bestTimeOfDay: "morning", coordinates: { lat: 26.9239, lng: 75.8267 }, openingHours: "09:00 AM - 04:30 PM" },
-      { title: "Amer Fort", description: "A majestic hilltop fortress overlooking Maota Lake, famous for its artistic Hindu style elements.", cost: "$7", averageVisitDuration: "3h", bestTimeOfDay: "morning", coordinates: { lat: 26.9854, lng: 75.8513 }, openingHours: "08:00 AM - 05:30 PM (Night tour 07:00 PM - 10:00 PM)" },
-      { title: "City Palace", description: "The royal seat of the Maharaja of Jaipur, featuring a stunning blend of Mughal and Rajput architecture.", cost: "$10", averageVisitDuration: "2h", bestTimeOfDay: "morning", coordinates: { lat: 26.9258, lng: 75.8236 }, openingHours: "09:30 AM - 05:00 PM (Night tour 07:00 PM - 10:00 PM)" },
-      { title: "Jantar Mantar", description: "A UNESCO World Heritage site featuring the world's largest stone sundial and astronomical instruments.", cost: "$4", averageVisitDuration: "1.5h", bestTimeOfDay: "afternoon", coordinates: { lat: 26.9248, lng: 75.8245 }, openingHours: "09:00 AM - 04:30 PM" },
-      { title: "Nahargarh Fort", description: "A historic fort standing on the edge of the Aravalli Hills, offering panoramic sunset views of the city.", cost: "$4", averageVisitDuration: "2h", bestTimeOfDay: "sunset", coordinates: { lat: 26.9374, lng: 75.8156 }, openingHours: "10:00 AM - 05:30 PM" },
-      { title: "Jal Mahal", description: "The floating 'Water Palace' sitting in the center of Man Sagar Lake, showcasing striking Rajput architecture.", cost: "Free (View only from lakeside)", averageVisitDuration: "45m", bestTimeOfDay: "sunset", coordinates: { lat: 26.9654, lng: 75.8456 }, openingHours: "24/7 (Lakeside promenade open always)" }
+      { 
+        title: "Hawa Mahal", 
+        description: "The famous 'Palace of Winds' built in red and pink sandstone with 953 small casements.", 
+        cost: "$4", 
+        averageVisitDuration: "1h", 
+        bestTimeOfDay: "morning", 
+        coordinates: { lat: 26.9239, lng: 75.8267 }, 
+        openingHours: "09:00 AM - 04:30 PM",
+        categories: ["landmark", "photography"],
+        popularity: 98,
+        accessibility: ["guided_audio"],
+        weatherDependency: "low",
+        photographyScore: 10,
+        isPhotoSpot: true
+      },
+      { 
+        title: "Amer Fort", 
+        description: "A majestic hilltop fortress overlooking Maota Lake, famous for its artistic Hindu style elements.", 
+        cost: "$7", 
+        averageVisitDuration: "3h", 
+        bestTimeOfDay: "morning", 
+        coordinates: { lat: 26.9854, lng: 75.8513 }, 
+        openingHours: "08:00 AM - 05:30 PM",
+        categories: ["landmark", "culture"],
+        popularity: 96,
+        accessibility: ["guided_tours", "elephant_rides"],
+        weatherDependency: "high",
+        photographyScore: 9
+      },
+      { 
+        title: "City Palace", 
+        description: "The royal seat of the Maharaja of Jaipur, featuring a stunning blend of Mughal and Rajput architecture.", 
+        cost: "$10", 
+        averageVisitDuration: "2h", 
+        bestTimeOfDay: "morning", 
+        coordinates: { lat: 26.9258, lng: 75.8236 }, 
+        openingHours: "09:30 AM - 05:00 PM",
+        categories: ["landmark", "culture"],
+        popularity: 92,
+        accessibility: ["wheelchair_friendly"],
+        weatherDependency: "low",
+        photographyScore: 8
+      },
+      { 
+        title: "Jantar Mantar", 
+        description: "A UNESCO World Heritage site featuring the world's largest stone sundial and astronomical instruments.", 
+        cost: "$4", 
+        averageVisitDuration: "1.5h", 
+        bestTimeOfDay: "afternoon", 
+        coordinates: { lat: 26.9248, lng: 75.8245 }, 
+        openingHours: "09:00 AM - 04:30 PM",
+        categories: ["landmark", "culture"],
+        popularity: 88,
+        accessibility: ["wheelchair_friendly"],
+        weatherDependency: "high",
+        photographyScore: 7
+      },
+      { 
+        title: "Nahargarh Fort", 
+        description: "A historic fort standing on the edge of the Aravalli Hills, offering panoramic sunset views of the city.", 
+        cost: "$4", 
+        averageVisitDuration: "2h", 
+        bestTimeOfDay: "sunset", 
+        coordinates: { lat: 26.9374, lng: 75.8156 }, 
+        openingHours: "10:00 AM - 05:30 PM",
+        categories: ["landmark", "nature", "photography"],
+        popularity: 85,
+        accessibility: [],
+        weatherDependency: "high",
+        photographyScore: 9,
+        isPhotoSpot: true
+      },
+      { 
+        title: "Jal Mahal", 
+        description: "The floating 'Water Palace' sitting in the center of Man Sagar Lake, showcasing striking Rajput architecture.", 
+        cost: "Free", 
+        averageVisitDuration: "45m", 
+        bestTimeOfDay: "sunset", 
+        coordinates: { lat: 26.9654, lng: 75.8456 }, 
+        openingHours: "24/7",
+        categories: ["landmark", "photography"],
+        popularity: 86,
+        accessibility: [],
+        weatherDependency: "high",
+        photographyScore: 9
+      }
     ],
     hiddenGems: [
-      { title: "Panna Meena Ka Kund", description: "An ancient, highly photogenic eight-story stepwell famous for its symmetric zig-zag staircases.", cost: "Free", averageVisitDuration: "1h", bestTimeOfDay: "morning", coordinates: { lat: 26.9892, lng: 75.8532 }, openingHours: "06:00 AM - 06:00 PM" },
-      { title: "Galta Ji (Monkey Temple)", description: "A unique prehistoric Hindu pilgrimage site featuring natural freshwater springs and bathing pools.", cost: "Free", averageVisitDuration: "2h", bestTimeOfDay: "afternoon", coordinates: { lat: 26.9168, lng: 75.8592 }, openingHours: "05:00 AM - 09:00 PM" },
-      { title: "Amrapali Museum", description: "A unique museum displaying a spectacular collection of traditional Indian jewelry and silver artifacts.", cost: "$8", averageVisitDuration: "1.5h", bestTimeOfDay: "morning", coordinates: { lat: 26.9142, lng: 75.8012 }, openingHours: "10:00 AM - 06:00 PM" },
-      { title: "Anokhi Museum", description: "A quaint museum housed in a restored mansion dedicated to the art of traditional hand-block printing.", cost: "$2", averageVisitDuration: "1.5h", bestTimeOfDay: "afternoon", coordinates: { lat: 26.9878, lng: 75.8542 }, openingHours: "10:30 AM - 05:00 PM" }
+      { 
+        title: "Panna Meena Ka Kund", 
+        description: "An ancient, highly photogenic eight-story stepwell famous for its symmetric zig-zag staircases.", 
+        cost: "Free", 
+        averageVisitDuration: "1h", 
+        bestTimeOfDay: "morning", 
+        coordinates: { lat: 26.9892, lng: 75.8532 }, 
+        openingHours: "06:00 AM - 06:00 PM",
+        categories: ["landmark", "photography"],
+        popularity: 72,
+        accessibility: [],
+        weatherDependency: "low",
+        photographyScore: 9,
+        isPhotoSpot: true,
+        isHiddenGem: true
+      },
+      { 
+        title: "Galta Ji (Monkey Temple)", 
+        description: "A unique prehistoric Hindu pilgrimage site featuring natural freshwater springs and bathing pools.", 
+        cost: "Free", 
+        averageVisitDuration: "2h", 
+        bestTimeOfDay: "afternoon", 
+        coordinates: { lat: 26.9168, lng: 75.8592 }, 
+        openingHours: "05:00 AM - 09:00 PM",
+        categories: ["culture", "adventure"],
+        popularity: 74,
+        accessibility: [],
+        weatherDependency: "high",
+        photographyScore: 8,
+        isHiddenGem: true
+      },
+      { 
+        title: "Amrapali Museum", 
+        description: "A unique museum displaying a spectacular collection of traditional Indian jewelry and silver artifacts.", 
+        cost: "$8", 
+        averageVisitDuration: "1.5h", 
+        bestTimeOfDay: "morning", 
+        coordinates: { lat: 26.9142, lng: 75.8012 }, 
+        openingHours: "10:00 AM - 06:00 PM",
+        categories: ["museum"],
+        popularity: 68,
+        accessibility: ["wheelchair_ramps"],
+        weatherDependency: "low",
+        photographyScore: 6,
+        isRelaxing: true,
+        isHiddenGem: true
+      },
+      { 
+        title: "Anokhi Museum", 
+        description: "A quaint museum housed in a restored mansion dedicated to the art of traditional hand-block printing.", 
+        cost: "$2", 
+        averageVisitDuration: "1.5h", 
+        bestTimeOfDay: "afternoon", 
+        coordinates: { lat: 26.9878, lng: 75.8542 }, 
+        openingHours: "10:30 AM - 05:00 PM",
+        categories: ["museum", "culture"],
+        popularity: 65,
+        accessibility: [],
+        weatherDependency: "low",
+        photographyScore: 7,
+        isHiddenGem: true
+      }
     ],
     dining: {
       streetFood: [
@@ -364,7 +942,238 @@ const MOCK_DESTINATIONS: Record<string, DestinationKnowledge> = {
         metroStations: ["Badi Chopar Metro Station (2m walk)"],
         emergencyServices: ["Manak Chowk Police Station (200m away)", "SMS Hospital (3 km away)"]
       }
-    }
+    },
+    seasonalActivities: {
+      spring: ["Kanak Vrindavan gardens afternoon flower stroll", "Shopping for light cotton bandhani prints"],
+      winter: ["Elephant sanctuary interactions on warm afternoons", "Hot Dal Baati dinners around outdoor campfires"],
+      autumn: ["Nahargarh fort ramparts monsoon views in October", "Diwali festival lighting walk in old bazaars"],
+      summer: ["Rooftop dining at Wind View Cafe with evening breeze", "Albert Hall indoor museum history tour"]
+    },
+    events: [
+      { title: "Jaipur Literature Festival", description: "The world's largest free literary festival, bringing together Nobel laureates and readers.", month: 1, category: "festival", cost: "Free" },
+      { title: "Teej Festival Parade", description: "Colorful traditional processions featuring painted elephants, local music, and folk dancers.", month: 8, category: "festival", cost: "Free" }
+    ]
+  },
+  rome: {
+    destination: "Rome",
+    country: "Italy",
+    region: "Lazio",
+    coordinates: { lat: 41.9028, lng: 12.4964 },
+    language: "Italian",
+    currency: "EUR",
+    timezone: "GMT+1 (CET)",
+    bestSeason: "April to June, September to October",
+    safetyScore: 89,
+    crowdLevels: "high",
+    weatherSummary: "Mediterranean climate. Warm spring/autumn (15-25°C), hot summers (28-36°C), cool, damp winters (5-12°C).",
+    visaNotes: "Schengen visa required for non-visa-exempt foreign nationals; must register with state portals.",
+    emergencyContacts: { police: "112", medical: "118", fire: "115" },
+    transportation: ["Metro Line A & B", "Rome City Tram", "Urban Buses", "Shared electric scooters"],
+    averageCosts: { accommodation: "$130/night", food: "$35/day", transit: "$6/day", sightseeing: "$30/day" },
+    mustVisitAttractions: [
+      {
+        title: "Colosseum",
+        description: "The giant 1st-century gladiatorial amphitheater in the center of Rome, a monument to Roman engineering.",
+        cost: "$18",
+        averageVisitDuration: "2h",
+        bestTimeOfDay: "morning",
+        coordinates: { lat: 41.8902, lng: 12.4922 },
+        openingHours: "08:30 AM - 07:00 PM",
+        categories: ["landmark", "culture"],
+        popularity: 99,
+        accessibility: ["elevators", "flat_walkways"],
+        weatherDependency: "high",
+        photographyScore: 10
+      },
+      {
+        title: "Roman Forum & Palatine Hill",
+        description: "The sprawling ruins of the ancient Roman Empire's civic and governmental heart, overlooking the valley.",
+        cost: "$18",
+        averageVisitDuration: "2.5h",
+        bestTimeOfDay: "morning",
+        coordinates: { lat: 41.8922, lng: 12.4862 },
+        openingHours: "08:30 AM - 07:00 PM",
+        categories: ["landmark", "culture"],
+        popularity: 96,
+        accessibility: ["assisted_ramps"],
+        weatherDependency: "high",
+        photographyScore: 9
+      },
+      {
+        title: "Trevi Fountain",
+        description: "The baroque masterpiece fountain designed by Nicola Salvi, famous for the coin-throwing tradition.",
+        cost: "Free",
+        averageVisitDuration: "45m",
+        bestTimeOfDay: "night",
+        coordinates: { lat: 41.9009, lng: 12.4833 },
+        openingHours: "24/7",
+        categories: ["landmark", "photography"],
+        popularity: 98,
+        accessibility: ["flat_paths"],
+        weatherDependency: "low",
+        photographyScore: 10,
+        isPhotoSpot: true
+      },
+      {
+        title: "Pantheon",
+        description: "The beautifully preserved 2nd-century Roman temple, famous for its giant concrete dome and open oculus.",
+        cost: "$5",
+        averageVisitDuration: "1h",
+        bestTimeOfDay: "afternoon",
+        coordinates: { lat: 41.8986, lng: 12.4769 },
+        openingHours: "09:00 AM - 07:00 PM",
+        categories: ["landmark", "culture"],
+        popularity: 95,
+        accessibility: ["wheelchair_friendly"],
+        weatherDependency: "low",
+        photographyScore: 9
+      },
+      {
+        title: "Vatican Museums & Sistine Chapel",
+        description: "The legendary museums displaying the art collections of the Popes, including Michelangelo's ceiling.",
+        cost: "$22",
+        averageVisitDuration: "3.5h",
+        bestTimeOfDay: "morning",
+        coordinates: { lat: 41.9064, lng: 12.4536 },
+        openingHours: "09:00 AM - 06:00 PM (Closed on Sundays)",
+        categories: ["museum", "culture"],
+        popularity: 97,
+        accessibility: ["elevators", "wheelchair_routes"],
+        weatherDependency: "low",
+        photographyScore: 8
+      },
+      {
+        title: "St. Peter's Basilica",
+        description: "The Renaissance church in Vatican City, the spiritual center of Catholicism, containing Michelangelo's Pietà.",
+        cost: "Free (Dome climb is $8)",
+        averageVisitDuration: "2h",
+        bestTimeOfDay: "morning",
+        coordinates: { lat: 41.9022, lng: 12.4533 },
+        openingHours: "07:00 AM - 07:00 PM",
+        categories: ["landmark", "culture"],
+        popularity: 97,
+        accessibility: ["wheelchair_ramps"],
+        weatherDependency: "low",
+        photographyScore: 9
+      }
+    ],
+    hiddenGems: [
+      {
+        title: "Villa Celimontana",
+        description: "A peaceful 16th-century park on the Caelian Hill, filled with ancient fountains, obelisks, and gardens.",
+        cost: "Free",
+        averageVisitDuration: "1.5h",
+        bestTimeOfDay: "afternoon",
+        coordinates: { lat: 41.8845, lng: 12.4962 },
+        openingHours: "07:00 AM - Sunset",
+        categories: ["nature", "family"],
+        popularity: 62,
+        accessibility: ["gravel_paths"],
+        weatherDependency: "high",
+        photographyScore: 8,
+        isRelaxing: true,
+        isHiddenGem: true
+      },
+      {
+        title: "Quartiere Coppedè",
+        description: "A small, surreal residential neighborhood designed by Gino Coppedè in fantasy-revival style architecture.",
+        cost: "Free",
+        averageVisitDuration: "1h",
+        bestTimeOfDay: "afternoon",
+        coordinates: { lat: 41.9192, lng: 12.5028 },
+        openingHours: "24/7",
+        categories: ["landmark", "photography"],
+        popularity: 64,
+        accessibility: ["street_views"],
+        weatherDependency: "low",
+        photographyScore: 9,
+        isPhotoSpot: true,
+        isHiddenGem: true
+      },
+      {
+        title: "Keyhole of the Aventine Hill",
+        description: "A small brass keyhole in a gate offering a perfectly framed view of St. Peter's Dome through a tree arch.",
+        cost: "Free",
+        averageVisitDuration: "30m",
+        bestTimeOfDay: "sunset",
+        coordinates: { lat: 41.8825, lng: 12.4785 },
+        openingHours: "24/7",
+        categories: ["photography"],
+        popularity: 70,
+        accessibility: [],
+        weatherDependency: "low",
+        photographyScore: 9,
+        isHiddenGem: true
+      },
+      {
+        title: "Appian Way (Via Appia Antica)",
+        description: "One of the earliest and most strategically vital ancient Roman military roads, lined with tombs and pine trees.",
+        cost: "Free",
+        averageVisitDuration: "3h",
+        bestTimeOfDay: "morning",
+        coordinates: { lat: 41.8512, lng: 12.5165 },
+        openingHours: "24/7",
+        categories: ["landmark", "nature"],
+        popularity: 68,
+        accessibility: ["uneven_stones"],
+        weatherDependency: "high",
+        photographyScore: 8,
+        isHiddenGem: true
+      }
+    ],
+    dining: {
+      streetFood: [
+        { name: "Supplizio", cuisine: "Supplì & Roman Snacks", averageCost: "$6/person", description: "Cozy shop offering authentic Roman fried rice balls stuffed with mozzarella and rich ragù sauce." },
+        { name: "Gelateria Frigidarium", cuisine: "Artisanal Gelato", averageCost: "$4/person", description: "Popular gelateria near Piazza Navona offering gelato dipped in dark or white chocolate shells." }
+      ],
+      fineDining: [
+        { name: "Armando al Pantheon", cuisine: "Authentic Roman Trattoria", averageCost: "$35/person", description: "Historic restaurant serving classic Roman pastas: Carbonara, Cacio e Pepe, and Amatriciana near the temple." }
+      ],
+      cafes: [
+        { name: "Sant'Eustachio il Caffè", cuisine: "Specialty Espresso", averageCost: "$3/person", description: "One of Rome's oldest and most famous espresso bars, known for its frothy gran caffè wood-roasted blends." }
+      ]
+    },
+    nightlife: ["Trastevere bar crawling", "Piazza Navona street performers", "Tiber riverbanks summer bars"],
+    adventureActivities: ["E-bike tour of the Appian Way ruins", "Vatican Necropolis underground tour"],
+    museums: ["Vatican Museums", "Borghese Gallery", "Capitoline Museums"],
+    parks: ["Villa Borghese Gardens", "Villa Doria Pamphili", "Orange Garden (Aventine Hill)"],
+    temples: ["St. Peter's Basilica", "Pantheon", "Basilica di Santa Maria Maggiore"],
+    historicalSites: ["Colosseum", "Roman Forum", "Castel Sant'Angelo", "Catacombs of Rome"],
+    shoppingAreas: ["Via del Corso", "Via Condotti fashion street", "Campo de' Fiori markets"],
+    markets: ["Porta Portese flea market", "Mercato Testaccio food stalls"],
+    soloExperiences: ["Wandering the ruins of the Roman Forum", "Grabbing a slice of pizza al taglio in Campo de' Fiori"],
+    coupleExperiences: ["Enjoying sunset views from the Orange Garden terrace", "Throwing a coin into the Trevi Fountain at midnight"],
+    familyAttractions: ["Explora Children's Museum", "Picnic in the Villa Borghese gardens and renting surrey bikes"],
+    luxuryExperiences: ["Private VIP after-hours tour of the Sistine Chapel", "Wine tasting dinner in a historic Roman cellar"],
+    budgetExperiences: ["Drinking fresh water from the city's 'Nasoni' iron fountains", "Free entry to state museums on first Sundays"],
+    localFestivals: ["Natale di Roma (April)", "Festa de Noantri (July)", "Navona Christmas Fair (December)"],
+    travelTips: {
+      touristScams: ["Avoid men dressed as gladiators charging for photos near Colosseum", "Beware of pickpockets on Metro Line A and Bus 64", "Check restaurant menu prices for fish or steaks charged 'per 100g' to prevent surprise bills"],
+      packingTips: ["Shoulders and knees must be covered to enter St. Peter's and Vatican Museums", "Sturdy, thick-soled walking shoes for cobblestones (sanpietrini)", "Refillable water bottle for public fountains"],
+      generalTips: ["Vatican Museums are closed on Sundays (except last Sunday of the month).", "Order coffee standing at the bar to avoid service charges ('tavolo') at historic cafes.", "Validate public transit tickets immediately upon boarding buses."]
+    },
+    popularityScore: 98,
+    userRating: 4.8,
+    nearbyRecommendations: {
+      "Colosseum": {
+        cafes: ["Oppio Caffe (2m walk)", "La Licata (5m walk)"],
+        restaurants: ["Trattoria Luzzi (6m walk)", "Hostaria al Gladiatore (3m walk)"],
+        restrooms: ["Colosseum Visitor Center (1m walk)", "Metro B Station restrooms"],
+        parking: ["Park Services Colosseo (300m away)"],
+        metroStations: ["Colosseo Metro Station (Line B) (1m walk)"],
+        emergencyServices: ["Carabinieri Station Celio (300m away)", "Ospedale Fatebenefratelli (1.8 km away)"]
+      }
+    },
+    seasonalActivities: {
+      spring: ["Picnic under the pine trees of Villa Borghese", "Walking the Appian Way amid spring wildflowers"],
+      winter: ["Strolling Piazza Navona Christmas markets on crisp evenings", "Exploring Vatican Museums indoor halls away from rain"],
+      summer: ["Enjoying open-air Tiber riverbanks food and cinema stalls at Lungo il Tevere", "Night tours of the Colosseum to avoid summer midday heat"],
+      autumn: ["Scenic walk up Aventine Hill Orange Garden for golden autumn foliage", "Sampling new olive oil and roasted chestnuts in Trastevere"]
+    },
+    events: [
+      { title: "Piazza Navona Christmas Fair", description: "Historic winter carnival featuring carousel rides, toy stalls, and local holiday street treats.", month: 12, category: "festival", cost: "Free" },
+      { title: "Natale di Roma", description: "Rome's birthday celebrations featuring historical reenactments, parades, and fireworks near Roman Forum.", month: 4, category: "festival", cost: "Free" }
+    ]
   }
 };
 
@@ -373,13 +1182,10 @@ export class MockKnowledgeProvider implements DestinationKnowledgeProvider {
 
   async fetchDestinationKnowledge(destination: string): Promise<DestinationKnowledge | null> {
     const key = destination.toLowerCase().trim().replace(/[^a-z0-9]/g, "");
-    
-    // Check key mapping or partial match
     const matchedKey = Object.keys(MOCK_DESTINATIONS).find(k => k === key || key.includes(k) || k.includes(key));
     if (matchedKey) {
       return MOCK_DESTINATIONS[matchedKey];
     }
-    
     return null;
   }
 }

@@ -93,12 +93,67 @@ export class DestinationKnowledgeEngine {
       transportation: ["Public Metro", "Taxis", "Walking"],
       averageCosts: { accommodation: "$100/night", food: "$25/day", transit: "$8/day", sightseeing: "$15/day" },
       mustVisitAttractions: [
-        { title: `${destination} City Center`, description: "Explore the bustling historic core and surrounding architectural landmarks.", cost: "Free", averageVisitDuration: "2.5h", bestTimeOfDay: "morning", coordinates: { lat: 35.6762, lng: 139.6503 }, openingHours: "24/7" },
-        { title: `Main Historical Site`, description: "Discover the heritage, culture, and architecture that defined this region.", cost: "$10", averageVisitDuration: "2h", bestTimeOfDay: "afternoon", coordinates: { lat: 35.6792, lng: 139.6533 }, openingHours: "09:00 AM - 05:00 PM" }
+        { 
+          title: `${destination} City Center`, 
+          description: "Explore the bustling historic core and surrounding architectural landmarks.", 
+          cost: "Free", 
+          averageVisitDuration: "2.5h", 
+          bestTimeOfDay: "morning", 
+          coordinates: { lat: 35.6762, lng: 139.6503 }, 
+          openingHours: "24/7",
+          categories: ["landmark", "culture"],
+          popularity: 90,
+          accessibility: ["wheelchair_accessible"],
+          weatherDependency: "low",
+          photographyScore: 8
+        },
+        { 
+          title: `Main Historical Site`, 
+          description: "Discover the heritage, culture, and architecture that defined this region.", 
+          cost: "$10", 
+          averageVisitDuration: "2h", 
+          bestTimeOfDay: "afternoon", 
+          coordinates: { lat: 35.6792, lng: 139.6533 }, 
+          openingHours: "09:00 AM - 05:00 PM",
+          categories: ["landmark", "culture"],
+          popularity: 85,
+          accessibility: ["guided_tours"],
+          weatherDependency: "low",
+          photographyScore: 8
+        }
       ],
       hiddenGems: [
-        { title: "Local Secret Viewpoint", description: "A quiet, off-the-beaten-path overlook offering sweeping panoramic vistas.", cost: "Free", averageVisitDuration: "1h", bestTimeOfDay: "sunset", coordinates: { lat: 35.6732, lng: 139.6473 }, openingHours: "24/7" },
-        { title: "Charming Corner Cafe", description: "Relax with freshly roasted coffee and locally made pastries in a serene setting.", cost: "$5", averageVisitDuration: "1h", bestTimeOfDay: "morning", coordinates: { lat: 35.6742, lng: 139.6483 }, openingHours: "08:00 AM - 06:00 PM" }
+        { 
+          title: "Local Secret Viewpoint", 
+          description: "A quiet, off-the-beaten-path overlook offering sweeping panoramic vistas.", 
+          cost: "Free", 
+          averageVisitDuration: "1h", 
+          bestTimeOfDay: "sunset", 
+          coordinates: { lat: 35.6732, lng: 139.6473 }, 
+          openingHours: "24/7",
+          categories: ["photography", "nature"],
+          popularity: 70,
+          accessibility: [],
+          weatherDependency: "high",
+          photographyScore: 9,
+          isHiddenGem: true
+        },
+        { 
+          title: "Charming Corner Cafe", 
+          description: "Relax with freshly roasted coffee and locally made pastries in a serene setting.", 
+          cost: "$5", 
+          averageVisitDuration: "1h", 
+          bestTimeOfDay: "morning", 
+          coordinates: { lat: 35.6742, lng: 139.6483 }, 
+          openingHours: "08:00 AM - 06:00 PM",
+          categories: ["food", "culture"],
+          popularity: 72,
+          accessibility: ["wheelchair_accessible"],
+          weatherDependency: "low",
+          photographyScore: 7,
+          isRelaxing: true,
+          isHiddenGem: true
+        }
       ],
       dining: {
         streetFood: [

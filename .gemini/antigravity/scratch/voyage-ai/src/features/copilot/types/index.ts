@@ -19,6 +19,8 @@ export interface TripPreferences {
   travelers?: number;
   accommodationType?: string;
   transportationPreference?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface Activity {
