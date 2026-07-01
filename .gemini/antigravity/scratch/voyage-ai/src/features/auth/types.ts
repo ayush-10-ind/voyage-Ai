@@ -3,6 +3,8 @@ export interface User {
   name: string | null;
   email: string | null;
   image: string | null;
+  phone?: string;
+  country?: string;
 }
 
 export interface UserContextType {
@@ -10,7 +12,8 @@ export interface UserContextType {
   user: User | null;
   authenticated: boolean;
   loading: boolean;
-  login: (email: string, name: string) => Promise<boolean>;
+  login: (email: string, password?: string, isOAuth?: boolean) => Promise<boolean>;
+  signUp: (email: string, name: string, password: string, phone?: string, country?: string) => Promise<boolean>;
   logout: () => Promise<void>;
   openSignIn: () => void;
   openSignUp: () => void;

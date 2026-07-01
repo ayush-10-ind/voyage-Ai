@@ -26,6 +26,7 @@ export interface Activity {
   title: string;
   description: string;
   cost?: string;
+  category?: string;
 }
 
 export interface Restaurant {

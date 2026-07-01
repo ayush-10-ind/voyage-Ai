@@ -19,10 +19,8 @@ export function useUserContext() {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// Simple check to see if Clerk is configured via environment variables
 const IS_CLERK_CONFIGURED = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
-// 1. Clerk-backed Provider (Only evaluated/imported if Clerk is used)
 let ClerkProvider: any = null;
 let useClerkUser: any = null;
 let useClerkAuth: any = null;
@@ -55,9 +53,7 @@ function ClerkUserProviderInternal({ children }: { children: React.ReactNode }) 
       return cu.firstName;
     }
     if (cu.primaryEmailAddress?.emailAddress) {
-      // Extract username from email
       const username = cu.primaryEmailAddress.emailAddress.split("@")[0];
-      // Capitalize first letter of each part if it has dots/dashes
       return username
         .split(/[\._-]/)
         .map((s: string) => s.charAt(0).toUpperCase() + s.slice(1))
@@ -107,6 +103,7 @@ function ClerkUserProviderInternal({ children }: { children: React.ReactNode }) 
     authenticated: !!userId,
     loading: !isUserLoaded || syncing,
     login: async () => true,
+    signUp: async () => true,
     logout: async () => {
       VoyageLogger.info("Auth", "User Signed Out (via Clerk)");
       await signOut();
@@ -120,7 +117,16 @@ function ClerkUserProviderInternal({ children }: { children: React.ReactNode }) 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }
 
-// 2. Local Mock Provider (Used by default for offline/sandbox mode)
+// Local mock database model interface
+interface MockAccount {
+  id: string;
+  name: string;
+  email: string;
+  passwordHash: string; // Stored in plain text for development sandbox ease
+  phone?: string;
+  country?: string;
+}
+
 function MockUserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -131,13 +137,11 @@ function MockUserProvider({ children }: { children: React.ReactNode }) {
       try {
         const parsed = JSON.parse(stored);
         setUser(parsed);
-        // Trigger profile sync in background
         ProfileDBService.syncProfile(parsed.id, {
           fullName: parsed.name || "Explorer",
           email: parsed.email || "",
           avatar: parsed.image || ""
         }).catch((err) => VoyageLogger.error("Auth", "Mock user initial sync failed"));
-        VoyageLogger.info("Auth", `Session Restored: ${parsed.email}`);
       } catch (e) {
         localStorage.removeItem("voyage_user");
       }
@@ -145,17 +149,77 @@ function MockUserProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   }, []);
 
-  const login = async (email: string, name: string): Promise<boolean> => {
+  const getRegistry = (): MockAccount[] => {
+    if (typeof window === "undefined") return [];
+    try {
+      return JSON.parse(localStorage.getItem("voyage_mock_auth_registry") || "[]");
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const saveRegistry = (registry: MockAccount[]) => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem("voyage_mock_auth_registry", JSON.stringify(registry));
+  };
+
+  const login = async (email: string, password?: string, isOAuth?: boolean): Promise<boolean> => {
     setLoading(true);
     await sleep(600);
-    const mockUser: User = {
-      id: `mock-user-${Date.now()}`,
-      name,
-      email,
-      image: `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(name || email)}`,
-    };
     
-    // Sync profile to database
+    if (isOAuth) {
+      // Social OAuth mock trigger
+      const oauthName = email.split("@")[0]
+        .split(/[\._-]/)
+        .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+        .join(" ");
+
+      const mockUser: User = {
+        id: `oauth-user-${Date.now()}`,
+        name: oauthName,
+        email: email,
+        image: `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(oauthName)}`,
+      };
+
+      const profile = await ProfileDBService.syncProfile(mockUser.id, {
+        fullName: mockUser.name || "Explorer",
+        email: mockUser.email || "",
+        avatar: mockUser.image || ""
+      });
+
+      const finalUser = {
+        id: mockUser.id,
+        name: profile.fullName || mockUser.name,
+        email: profile.email || mockUser.email,
+        image: profile.avatar || mockUser.image
+      };
+
+      setUser(finalUser);
+      localStorage.setItem("voyage_user", JSON.stringify(finalUser));
+      setLoading(false);
+      VoyageLogger.info("Auth", `User Signed In (OAuth): ${email}`);
+      return true;
+    }
+
+    // Credentials lookup
+    const registry = getRegistry();
+    const found = registry.find((acc) => acc.email.toLowerCase() === email.toLowerCase());
+
+    if (!found || found.passwordHash !== password) {
+      setLoading(false);
+      VoyageLogger.warn("Auth", `Failed credentials login attempt for: ${email}`);
+      throw new Error("Invalid email or password.");
+    }
+
+    const mockUser: User = {
+      id: found.id,
+      name: found.name,
+      email: found.email,
+      image: `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(found.name)}`,
+      phone: found.phone,
+      country: found.country
+    };
+
     const profile = await ProfileDBService.syncProfile(mockUser.id, {
       fullName: mockUser.name || "Explorer",
       email: mockUser.email || "",
@@ -166,13 +230,78 @@ function MockUserProvider({ children }: { children: React.ReactNode }) {
       id: mockUser.id,
       name: profile.fullName || mockUser.name,
       email: profile.email || mockUser.email,
-      image: profile.avatar || mockUser.image
+      image: profile.avatar || mockUser.image,
+      phone: mockUser.phone,
+      country: mockUser.country
     };
 
     setUser(finalUser);
     localStorage.setItem("voyage_user", JSON.stringify(finalUser));
     setLoading(false);
-    VoyageLogger.info("Auth", `User Signed In: ${email}`);
+    VoyageLogger.info("Auth", `User Signed In (Credentials): ${email}`);
+    return true;
+  };
+
+  const signUp = async (
+    email: string,
+    name: string,
+    password: string,
+    phone?: string,
+    country?: string
+  ): Promise<boolean> => {
+    setLoading(true);
+    await sleep(600);
+
+    const registry = getRegistry();
+    const exists = registry.some((acc) => acc.email.toLowerCase() === email.toLowerCase());
+    
+    if (exists) {
+      setLoading(false);
+      VoyageLogger.warn("Auth", `Register attempt failed: email already exists: ${email}`);
+      throw new Error("An account with this email already exists.");
+    }
+
+    const newAccount: MockAccount = {
+      id: `usr-${Date.now()}`,
+      name,
+      email,
+      passwordHash: password,
+      phone,
+      country
+    };
+
+    registry.push(newAccount);
+    saveRegistry(registry);
+
+    // Auto-login upon registration
+    const mockUser: User = {
+      id: newAccount.id,
+      name: newAccount.name,
+      email: newAccount.email,
+      image: `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(newAccount.name)}`,
+      phone: newAccount.phone,
+      country: newAccount.country
+    };
+
+    const profile = await ProfileDBService.syncProfile(mockUser.id, {
+      fullName: mockUser.name || "Explorer",
+      email: mockUser.email || "",
+      avatar: mockUser.image || ""
+    });
+
+    const finalUser = {
+      id: mockUser.id,
+      name: profile.fullName || mockUser.name,
+      email: profile.email || mockUser.email,
+      image: profile.avatar || mockUser.image,
+      phone: mockUser.phone,
+      country: mockUser.country
+    };
+
+    setUser(finalUser);
+    localStorage.setItem("voyage_user", JSON.stringify(finalUser));
+    setLoading(false);
+    VoyageLogger.info("Auth", `Registered and logged in user: ${email}`);
     return true;
   };
 
@@ -202,6 +331,7 @@ function MockUserProvider({ children }: { children: React.ReactNode }) {
     authenticated: !!user,
     loading,
     login,
+    signUp,
     logout,
     openSignIn,
     openSignUp,
@@ -210,7 +340,6 @@ function MockUserProvider({ children }: { children: React.ReactNode }) {
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }
 
-// 3. Main Exported Provider
 export function UserProvider({ children }: { children: React.ReactNode }) {
   if (IS_CLERK_CONFIGURED && ClerkProvider) {
     return (
