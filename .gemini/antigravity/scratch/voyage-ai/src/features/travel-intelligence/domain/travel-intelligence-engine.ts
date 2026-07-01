@@ -28,7 +28,7 @@ export class TravelIntelligenceEngine {
       // 1. Generate stable offsets for coordinates so waypoints are spread out but close
       const latOffset = (Math.sin(idx * 45) * 0.02);
       const lngOffset = (Math.cos(idx * 45) * 0.02);
-      const coordinates = {
+      const coordinates = act.coordinates || {
         lat: baseCoords.lat + latOffset,
         lng: baseCoords.lng + lngOffset,
       };

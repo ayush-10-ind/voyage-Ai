@@ -1,4 +1,4 @@
-import { Coordinate, Attraction } from "../types";
+import { Coordinate, DestinationKnowledge, RestaurantRecommendation } from "../types";
 
 export interface ProviderPlace {
   id: string;
@@ -49,7 +49,7 @@ export interface EventsProvider {
 export interface ProviderWeather {
   tempMin: number;
   tempMax: number;
-  precipitationProbability: number; // 0.0 to 1.0
+  precipitationProbability: number;
   condition: "sunny" | "cloudy" | "rainy" | "snowy" | "stormy";
   summary: string;
 }
@@ -57,4 +57,66 @@ export interface ProviderWeather {
 export interface WeatherProvider {
   name: string;
   getForecast(coords: Coordinate, dateStr: string): Promise<ProviderWeather>;
+}
+
+// Sprint 7.7 Core Extensions
+export interface DestinationProvider {
+  name: string;
+  searchDestination(query: string): Promise<DestinationKnowledge | null>;
+}
+
+export interface FoodProvider {
+  name: string;
+  fetchDiningSpots(coords: Coordinate, budget: string): Promise<RestaurantRecommendation[]>;
+}
+
+export interface MapsProvider {
+  name: string;
+  getStaticMapUrl(coords: Coordinate, zoom?: number): string;
+  getDirectionsUrl(origin: Coordinate, destination: Coordinate): string;
+}
+
+export interface TrafficProvider {
+  name: string;
+  getDelayFactor(origin: Coordinate, destination: Coordinate): Promise<number>; // Delay coefficient (1.0 = normal)
+}
+
+// FUTURE API INTEGRATIONS (Architecture Only)
+export class GooglePlacesProvider implements PlacesProvider {
+  name = "GooglePlacesProvider";
+  async searchNearby() { return []; }
+  async getPlaceDetails() { return null; }
+}
+
+export class GoogleMapsDirectionsProvider implements RouteProvider {
+  name = "GoogleMapsDirectionsProvider";
+  async getRoute() {
+    return { distanceMeters: 1000, durationSeconds: 600, recommendedMode: "walking" as const, directionsHtml: [] };
+  }
+}
+
+export class MapboxDirectionsProvider implements RouteProvider {
+  name = "MapboxDirectionsProvider";
+  async getRoute() {
+    return { distanceMeters: 1000, durationSeconds: 600, recommendedMode: "walking" as const, directionsHtml: [] };
+  }
+}
+
+export class TicketmasterEventsProvider implements EventsProvider {
+  name = "TicketmasterEventsProvider";
+  async fetchEvents() { return []; }
+}
+
+export class OpenWeatherProvider implements WeatherProvider {
+  name = "OpenWeatherProvider";
+  async getForecast() {
+    return { tempMin: 15, tempMax: 25, precipitationProbability: 0, condition: "sunny" as const, summary: "Clear" };
+  }
+}
+
+export class TomorrowIOWeatherProvider implements WeatherProvider {
+  name = "TomorrowIOWeatherProvider";
+  async getForecast() {
+    return { tempMin: 15, tempMax: 25, precipitationProbability: 0, condition: "sunny" as const, summary: "Clear" };
+  }
 }

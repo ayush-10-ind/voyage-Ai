@@ -34,6 +34,23 @@ export interface Activity {
   localEvents?: string[];
   accessibilityInfo?: string[];
   transitOptions?: string[];
+  
+  // Sprint 7.7 extensions
+  openingHours?: string;
+  visitDuration?: string;
+  arrivalTime?: string;
+  departureTime?: string;
+  waitingTime?: string;
+  crowdIndicator?: string;
+  rating?: string;
+  ticketPrice?: string;
+  bookingRequired?: string;
+  address?: string;
+  website?: string;
+  accessibility?: string;
+  nearbyRecommendations?: string;
+  travelTime?: string;
+  distance?: string;
 }
 
 export interface Day {

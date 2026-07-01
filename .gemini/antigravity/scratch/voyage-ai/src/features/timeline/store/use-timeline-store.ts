@@ -255,6 +255,24 @@ export const useTimelineStore = create<TimelineState>((set, get) => {
             paymentMethod: undefined,
             receiptUrl: undefined,
             refundStatus: "none" as const,
+            
+            // Sprint 7.7 extensions
+            openingHours: act.openingHours,
+            visitDuration: act.visitDuration,
+            arrivalTime: act.arrivalTime,
+            departureTime: act.departureTime,
+            waitingTime: act.waitingTime,
+            crowdIndicator: act.crowdIndicator,
+            rating: act.rating,
+            ticketPrice: act.ticketPrice,
+            bookingRequired: act.bookingRequired,
+            address: act.address,
+            website: act.website,
+            accessibility: act.accessibility,
+            nearbyRecommendations: act.nearbyRecommendations,
+            travelTime: act.travelTime,
+            distance: act.distance,
+            coordinates: act.coordinates,
           };
         });
 

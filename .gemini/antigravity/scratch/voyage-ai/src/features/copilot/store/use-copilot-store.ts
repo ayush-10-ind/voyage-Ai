@@ -256,15 +256,15 @@ export const useCopilotStore = create<CopilotState>((set, get) => ({
           isGenerating: false,
           isStreaming: false,
         });
-      } catch (error) {
-        // Error Recovery
+      } catch (error: any) {
+        VoyageLogger.error("Copilot", `Itinerary generation failed: ${error.message || error}`);
         set({
           messages: [
             ...get().messages,
             {
               id: `copilot-err-${Date.now()}`,
               sender: "copilot",
-              content: "I encountered an issue while generating your itinerary. Would you like to try again?",
+              content: `I encountered an issue while generating your itinerary.\n\n**Subsystem Error Detail:**\n${error.message || error}\n\nWould you like to try again?`,
               timestamp: new Date(),
               suggestions: ["Regenerate Itinerary"],
             },

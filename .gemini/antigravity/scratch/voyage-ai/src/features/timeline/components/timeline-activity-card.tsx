@@ -38,6 +38,31 @@ export const TimelineActivityCard = memo(function TimelineActivityCard({
     updateActivity(dayNumber, activity.id, { isFavorite: !activity.isFavorite });
   };
 
+  const getDirectionsUrl = () => {
+    const dest = encodeURIComponent(activity.title + (activity.address ? `, ${activity.address}` : ""));
+    return `https://www.google.com/maps/dir/?api=1&destination=${dest}`;
+  };
+
+  // Render transit card design if transit category
+  if (activity.category === "transit") {
+    return (
+      <div className="w-full py-1">
+        <div className="flex items-center gap-3 px-4 py-2 bg-white/5 border border-dashed border-white/5 rounded-xl text-left text-xs">
+          <Icons.flight className="h-4 w-4 text-primary shrink-0 rotate-90" />
+          <div className="flex-1">
+            <p className="font-semibold text-zinc-300">{activity.title}</p>
+            <p className="text-[10px] text-muted-foreground">
+              {activity.description}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Cast properties to access Sprint 7.7 extensions
+  const actExt = activity as any;
+
   return (
     <div
       draggable
@@ -46,7 +71,7 @@ export const TimelineActivityCard = memo(function TimelineActivityCard({
         e.stopPropagation();
         selectActivity(activity.id);
       }}
-      className="cursor-grab active:cursor-grabbing pointer-events-auto w-full"
+      className="cursor-grab active:cursor-grabbing pointer-events-auto w-full text-left"
     >
       <motion.div
         layout
@@ -55,42 +80,49 @@ export const TimelineActivityCard = memo(function TimelineActivityCard({
         <SelectionOutline isSelected={isSelected}>
           <GlassCard
             padding="sm"
-            className={`group relative flex items-start gap-2.5 bg-white/5 border-white/10 hover:border-primary/30 transition-colors shadow-sm ${
+            className={`group relative flex flex-col gap-2.5 bg-white/5 border-white/10 hover:border-primary/30 transition-colors shadow-sm ${
               isSelected ? "border-primary/50" : ""
             }`}
           >
-            {/* Drag Handle Icon on Left */}
-            <div className="mt-1 text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors cursor-grab">
-              <Icons.filter className="h-3.5 w-3.5 rotate-90" />
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 text-left space-y-1 pr-12">
-              <div className="flex items-center gap-2">
+            {/* Top row metadata: Time, rating, favorite */}
+            <div className="flex justify-between items-center w-full">
+              <div className="flex items-center gap-1.5">
                 <span className="text-[9px] font-mono text-primary bg-primary/10 px-2 py-0.5 rounded-full font-semibold">
                   {activity.time}
                 </span>
-                {activity.cost && (
-                  <span className="text-[9px] font-mono text-muted-foreground font-semibold flex items-center gap-1">
-                    {activity.cost}
-                    {activity.plannedCost !== undefined && activity.plannedCost > 0 && (
-                      <span className="flex items-center gap-1 font-sans">
-                        •
-                        <span className={`h-1.5 w-1.5 rounded-full ${
-                          activity.paymentStatus === "paid"
-                            ? "bg-emerald-400 shadow-glow"
-                            : activity.paymentStatus === "partially_paid"
-                              ? "bg-amber-400"
-                              : "bg-white/25"
-                        }`} />
-                        <span className="text-[8px] uppercase tracking-wider text-muted-foreground/70 font-bold">
-                          {activity.paymentStatus === "paid" ? "Paid" : activity.paymentStatus === "partially_paid" ? "Part" : "Unpaid"}
-                        </span>
-                      </span>
-                    )}
+                {actExt.rating && (
+                  <span className="text-[9px] text-amber-400 font-bold flex items-center gap-0.5">
+                    ★ {actExt.rating}
                   </span>
                 )}
               </div>
+              <div className="flex items-center gap-0.5">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleFavorite}
+                  className={`h-5 w-5 rounded text-muted-foreground hover:text-amber-400 ${
+                    activity.isFavorite ? "text-amber-400" : ""
+                  }`}
+                >
+                  <Icons.star className={`h-3 w-3 ${activity.isFavorite ? "fill-amber-400 text-amber-400" : ""}`} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                  }}
+                  className="h-5 w-5 rounded text-muted-foreground hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Icons.trash className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Title & Description */}
+            <div className="space-y-1">
               <p className="text-xs font-bold text-white leading-tight">
                 {activity.title}
               </p>
@@ -99,40 +131,46 @@ export const TimelineActivityCard = memo(function TimelineActivityCard({
               </p>
             </div>
 
-            {/* Actions */}
-            <div className="absolute right-2 top-2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleFavorite}
-                className={`h-6 w-6 rounded-md text-muted-foreground hover:text-amber-400 ${
-                  activity.isFavorite ? "text-amber-400" : ""
-                }`}
+            {/* Visit Details Grid */}
+            {(actExt.openingHours || actExt.visitDuration || actExt.crowdIndicator) && (
+              <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 pt-1.5 border-t border-white/5 text-[10px] text-zinc-400">
+                {actExt.openingHours && (
+                  <div className="flex items-center gap-1">
+                    <Icons.time className="h-3 w-3 text-primary shrink-0" />
+                    <span className="truncate">Hours: {actExt.openingHours}</span>
+                  </div>
+                )}
+                {actExt.visitDuration && (
+                  <div className="flex items-center gap-1">
+                    <Icons.calendar className="h-3 w-3 text-cyan-400 shrink-0" />
+                    <span>Duration: {actExt.visitDuration}</span>
+                  </div>
+                )}
+                {actExt.crowdIndicator && (
+                  <div className="flex items-center gap-1 col-span-2">
+                    <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+                      actExt.crowdIndicator === "High Crowds" ? "bg-red-400" : "bg-emerald-400"
+                    }`} />
+                    <span>Crowds: {actExt.crowdIndicator}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Footer Navigation Button */}
+            <div className="pt-2 border-t border-white/5 flex items-center justify-between w-full">
+              <span className="text-[10px] font-mono text-zinc-400">
+                Price: {activity.cost || "Free"}
+              </span>
+              <a
+                href={getDirectionsUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-[9px] font-bold text-primary hover:underline flex items-center gap-1"
               >
-                <Icons.star className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit();
-                }}
-                className="h-6 w-6 rounded-md text-muted-foreground hover:text-white hover:bg-white/10"
-              >
-                <Icons.edit className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete();
-                }}
-                className="h-6 w-6 rounded-md text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
-              >
-                <Icons.trash className="h-3 w-3" />
-              </Button>
+                📍 Open in Google Maps
+              </a>
             </div>
           </GlassCard>
         </SelectionOutline>
