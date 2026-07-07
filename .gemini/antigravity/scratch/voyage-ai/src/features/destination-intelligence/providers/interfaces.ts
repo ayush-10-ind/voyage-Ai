@@ -30,6 +30,8 @@ export interface RouteProvider {
   getRoute(origin: Coordinate, destination: Coordinate, mode?: string): Promise<RouteSummary>;
 }
 
+export interface DirectionsProvider extends RouteProvider {}
+
 export interface ProviderEvent {
   id: string;
   title: string;
@@ -59,7 +61,6 @@ export interface WeatherProvider {
   getForecast(coords: Coordinate, dateStr: string): Promise<ProviderWeather>;
 }
 
-// Sprint 7.7 Core Extensions
 export interface DestinationProvider {
   name: string;
   searchDestination(query: string): Promise<DestinationKnowledge | null>;
@@ -78,45 +79,53 @@ export interface MapsProvider {
 
 export interface TrafficProvider {
   name: string;
-  getDelayFactor(origin: Coordinate, destination: Coordinate): Promise<number>; // Delay coefficient (1.0 = normal)
+  getDelayFactor(origin: Coordinate, destination: Coordinate): Promise<number>;
 }
 
-// FUTURE API INTEGRATIONS (Architecture Only)
+export interface PhotosProvider {
+  name: string;
+  fetchPhotos(query: string): Promise<string[]>;
+}
+
+// FUTURE PROVIDERS STUBS
 export class GooglePlacesProvider implements PlacesProvider {
   name = "GooglePlacesProvider";
-  async searchNearby() { return []; }
-  async getPlaceDetails() { return null; }
+  async searchNearby(coords: Coordinate, radiusMeters: number, category?: string) { return []; }
+  async getPlaceDetails(placeId: string) { return null; }
 }
 
-export class GoogleMapsDirectionsProvider implements RouteProvider {
-  name = "GoogleMapsDirectionsProvider";
-  async getRoute() {
+export class GoogleDirectionsProvider implements DirectionsProvider {
+  name = "GoogleDirectionsProvider";
+  async getRoute(origin: Coordinate, destination: Coordinate, mode?: string) {
     return { distanceMeters: 1000, durationSeconds: 600, recommendedMode: "walking" as const, directionsHtml: [] };
   }
 }
 
-export class MapboxDirectionsProvider implements RouteProvider {
+export class MapboxDirectionsProvider implements DirectionsProvider {
   name = "MapboxDirectionsProvider";
-  async getRoute() {
+  async getRoute(origin: Coordinate, destination: Coordinate, mode?: string) {
     return { distanceMeters: 1000, durationSeconds: 600, recommendedMode: "walking" as const, directionsHtml: [] };
   }
 }
 
 export class TicketmasterEventsProvider implements EventsProvider {
   name = "TicketmasterEventsProvider";
-  async fetchEvents() { return []; }
+  async fetchEvents(destination: string, startDate: string, endDate: string) { return []; }
 }
 
 export class OpenWeatherProvider implements WeatherProvider {
   name = "OpenWeatherProvider";
-  async getForecast() {
+  async getForecast(coords: Coordinate, dateStr: string) {
     return { tempMin: 15, tempMax: 25, precipitationProbability: 0, condition: "sunny" as const, summary: "Clear" };
   }
 }
 
-export class TomorrowIOWeatherProvider implements WeatherProvider {
-  name = "TomorrowIOWeatherProvider";
-  async getForecast() {
-    return { tempMin: 15, tempMax: 25, precipitationProbability: 0, condition: "sunny" as const, summary: "Clear" };
-  }
+export class GooglePhotosProvider implements PhotosProvider {
+  name = "GooglePhotosProvider";
+  async fetchPhotos(query: string) { return []; }
+}
+
+export class UnsplashPhotosProvider implements PhotosProvider {
+  name = "UnsplashPhotosProvider";
+  async fetchPhotos(query: string) { return []; }
 }

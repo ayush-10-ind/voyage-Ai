@@ -45,16 +45,27 @@ export const TimelineActivityCard = memo(function TimelineActivityCard({
 
   // Render transit card design if transit category
   if (activity.category === "transit") {
+    const isMetro = activity.title.toLowerCase().includes("metro") || activity.description.toLowerCase().includes("metro") || activity.description.toLowerCase().includes("transit");
+    const isDrive = activity.title.toLowerCase().includes("taxi") || activity.title.toLowerCase().includes("driving") || activity.description.toLowerCase().includes("taxi") || activity.description.toLowerCase().includes("car");
+    
     return (
-      <div className="w-full py-1">
-        <div className="flex items-center gap-3 px-4 py-2 bg-white/5 border border-dashed border-white/5 rounded-xl text-left text-xs">
-          <Icons.flight className="h-4 w-4 text-primary shrink-0 rotate-90" />
-          <div className="flex-1">
-            <p className="font-semibold text-zinc-300">{activity.title}</p>
-            <p className="text-[10px] text-muted-foreground">
-              {activity.description}
-            </p>
+      <div className="w-full py-1 flex items-center justify-between pointer-events-none pl-3">
+        <div className="flex flex-col items-center mr-3 shrink-0">
+          <div className="h-3 w-px bg-white/15" />
+          <div className="h-6 w-6 rounded-full border border-white/10 flex items-center justify-center bg-[#070b19] shadow-sm">
+            {isMetro ? (
+              <Icons.train className="h-3.5 w-3.5 text-indigo-400" />
+            ) : isDrive ? (
+              <Icons.car className="h-3.5 w-3.5 text-blue-400" />
+            ) : (
+              <Icons.walk className="h-3.5 w-3.5 text-emerald-400" />
+            )}
           </div>
+          <div className="h-3 w-px bg-white/15" />
+        </div>
+        <div className="flex-1 bg-white/5 border border-white/5 px-3 py-1.5 rounded-xl text-left overflow-hidden">
+          <span className="text-[10px] font-bold text-zinc-300 block">{activity.title}</span>
+          <span className="text-[9px] text-zinc-500 block truncate">{activity.description}</span>
         </div>
       </div>
     );

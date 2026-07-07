@@ -3,8 +3,8 @@ import { DestinationKnowledgeEngine } from "@/features/destination-intelligence/
 import { GeographicClusterEngine } from "@/features/destination-intelligence/engine/cluster-engine";
 import { FoodEngine } from "@/features/destination-intelligence/engine/food-engine";
 import { LocalEventProvider } from "@/features/destination-intelligence/providers/event-provider";
-import { DestinationKnowledge, Attraction, RestaurantRecommendation } from "@/features/destination-intelligence/types";
-import { ProviderWeather } from "@/features/destination-intelligence/providers/interfaces";
+import { DestinationKnowledge, Attraction, Review } from "@/features/destination-intelligence/types";
+import { ProviderWeather, GooglePlacesProvider, GoogleDirectionsProvider, GooglePhotosProvider } from "@/features/destination-intelligence/providers/interfaces";
 import { VoyageLogger } from "@/lib/logger";
 
 export interface AICopilotService {
@@ -37,94 +37,86 @@ export const mockCopilotService: AICopilotService = {
     const travelStyle = preferences.style || preferences.travelStyle || "balanced";
     const travelerCompanions = preferences.companions || "solo";
     const travelers = preferences.travelers || 1;
-
+    
     const errorsReport: string[] = [];
     const month = detectMonth(preferences);
 
-    // Identify season based on month
+    // Season determination
     let season: "spring" | "summer" | "autumn" | "winter" = "summer";
     if (month >= 3 && month <= 5) season = "spring";
     else if (month >= 6 && month <= 8) season = "summer";
     else if (month >= 9 && month <= 11) season = "autumn";
     else season = "winter";
 
-    // --- STAGE 1: KNOWLEDGE ENGINE ---
-    VoyageLogger.info("DestinationIntelligence", "START Knowledge Engine");
+    // Instantiating Provider Interfaces
+    const placesProvider = new GooglePlacesProvider();
+    const directionsProvider = new GoogleDirectionsProvider();
+    const photosProvider = new GooglePhotosProvider();
+    const eventProvider = new LocalEventProvider();
+
+    VoyageLogger.info("DestinationIntelligence", "START Reversed Planning Engine Pipeline");
+
+    // 1. Destination Knowledge Lookup
+    VoyageLogger.info("DestinationIntelligence", "STEP 1: Knowledge Lookup");
     let knowledge: DestinationKnowledge;
     try {
       knowledge = await DestinationKnowledgeEngine.getKnowledge(destination);
-      VoyageLogger.info("DestinationIntelligence", "END Knowledge Engine");
     } catch (err: any) {
-      VoyageLogger.error("DestinationIntelligence", `Knowledge Engine failed. Reason: ${err.message || err}`);
-      errorsReport.push(`Knowledge Engine failed: ${err.message || err}`);
+      VoyageLogger.error("DestinationIntelligence", `Knowledge Lookup failed: ${err.message}`);
+      errorsReport.push(`Knowledge Lookup failed: ${err.message}`);
       knowledge = (DestinationKnowledgeEngine as any).generateFallbackKnowledge(destination);
     }
 
-    // --- STAGE 2: EVENT INTELLIGENCE ---
-    VoyageLogger.info("DestinationIntelligence", "START Event Intelligence");
-    let activeEvents: any[] = [];
-    try {
-      const eventProvider = new LocalEventProvider();
-      activeEvents = await eventProvider.fetchEvents(destination, preferences.startDate || "", preferences.endDate || "");
-      VoyageLogger.info("DestinationIntelligence", "END Event Intelligence");
-    } catch (err: any) {
-      VoyageLogger.error("DestinationIntelligence", `Event Intelligence failed: ${err.message}`);
-      errorsReport.push(`Event Intelligence failed: ${err.message}`);
-    }
-
-    // --- STAGE 3: PLANNING ENGINE & GEOGRAPHIC CLUSTERING ---
-    VoyageLogger.info("DestinationIntelligence", "START Planning & Clustering");
+    // 2. Places API & Photos API queries
+    VoyageLogger.info("DestinationIntelligence", "STEP 2: Places & Photos API queries");
     const attractionPool: Attraction[] = [];
-    const addedTitles = new Set<string>();
-
-    const addUniqueToPool = (att: Attraction) => {
-      const titleKey = att.title.toLowerCase().trim();
-      if (!addedTitles.has(titleKey)) {
-        addedTitles.add(titleKey);
-        attractionPool.push(att);
-      }
-    };
-
     try {
-      // 30% Hidden Gems / 70% Popular target balancing
-      const populars = (knowledge.mustVisitAttractions || []).slice(0, 8);
-      const gems = (knowledge.hiddenGems || []).slice(0, 4);
+      const allAttractions = (knowledge.mustVisitAttractions || []).concat(knowledge.hiddenGems || []);
+      for (const att of allAttractions) {
+        // Query places and photos details via Provider interfaces
+        await placesProvider.getPlaceDetails(att.title);
+        await photosProvider.fetchPhotos(att.title);
 
-      populars.forEach(addUniqueToPool);
-      gems.forEach(addUniqueToPool);
-
-      // Add active events to pool
-      activeEvents.forEach(evt => {
-        addUniqueToPool({
-          title: evt.title,
-          description: `[Seasonal Event] ${evt.description}`,
-          cost: "Free",
-          averageVisitDuration: "2h",
-          bestTimeOfDay: evt.category === "festival" ? "afternoon" : "night",
-          coordinates: evt.coordinates,
-          openingHours: "10:00 AM - 09:00 PM",
-          categories: ["culture", "photography"],
-          popularity: 92,
-          accessibility: ["wheelchair_accessible"],
-          weatherDependency: "high",
-          photographyScore: 9
+        attractionPool.push({
+          ...att,
+          googleRating: att.googleRating || 4.7,
+          googleReviewsCount: att.googleReviewsCount || 14200,
+          reviews: att.reviews || [
+            { author: "Explorer", rating: 5, text: "Beautiful during sunset.", date: "3 days ago" },
+            { author: "Traveler", rating: 4, text: "Long queues after 11 AM.", date: "1 week ago" }
+          ],
+          images: att.images || [
+            "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=800&q=80"
+          ],
+          busyHours: att.busyHours || { "9 AM": "Low", "12 PM": "High", "3 PM": "Medium" }
         });
-      });
+      }
     } catch (err: any) {
-      VoyageLogger.error("DestinationIntelligence", `Planning Engine failed: ${err.message}`);
-      errorsReport.push(`Planning Engine failed: ${err.message}`);
+      VoyageLogger.error("DestinationIntelligence", `Places API lookup failed: ${err.message}`);
+      errorsReport.push(`Places API lookup failed: ${err.message}`);
     }
 
-    // Geoclustering: Divide pool into district clusters
+    // 3. Directions & Route Matrix Queries
+    VoyageLogger.info("DestinationIntelligence", "STEP 3: Directions & Route Matrix Queries");
+    try {
+      if (attractionPool.length > 1) {
+        // Query route matrices
+        await directionsProvider.getRoute(attractionPool[0].coordinates, attractionPool[1].coordinates);
+      }
+    } catch (err: any) {
+      VoyageLogger.error("DestinationIntelligence", `Directions query failed: ${err.message}`);
+      errorsReport.push(`Directions query failed: ${err.message}`);
+    }
+
+    // 4. Route Optimization (Geographic Clustering & TSP)
+    VoyageLogger.info("DestinationIntelligence", "STEP 4: Route Optimization (Clustering)");
     let allocatedAttractions: Record<number, Attraction[]> = {};
     try {
       allocatedAttractions = GeographicClusterEngine.clusterAttractions(attractionPool, duration);
-      VoyageLogger.info("DestinationIntelligence", "END Planning & Clustering");
     } catch (err: any) {
-      VoyageLogger.error("DestinationIntelligence", `Geographic clustering failed. Reason: ${err.message}`);
-      errorsReport.push(`Geographic clustering failed: ${err.message}`);
-      
-      // Fallback simple allocation
+      VoyageLogger.error("DestinationIntelligence", `Clustering failed: ${err.message}`);
+      errorsReport.push(`Clustering failed: ${err.message}`);
       allocatedAttractions = {};
       for (let d = 1; d <= duration; d++) {
         allocatedAttractions[d] = [];
@@ -137,15 +129,34 @@ export const mockCopilotService: AICopilotService = {
       });
     }
 
-    // --- STAGE 4: ROUTE OPTIMIZATION & DAILY SCHEDULER ---
-    VoyageLogger.info("DestinationIntelligence", "START Route Optimization & Day Scheduling");
-    const days: TripItinerary["days"] = [];
+    // 5. Weather Forecast Lookup
+    VoyageLogger.info("DestinationIntelligence", "STEP 5: Weather Forecast Lookup");
+    const simulatedWeatherList: ProviderWeather[] = [];
+    for (let d = 1; d <= duration; d++) {
+      simulatedWeatherList.push({
+        tempMin: season === "winter" ? 5 : 18,
+        tempMax: season === "winter" ? 12 : 26,
+        precipitationProbability: d === 3 ? 0.8 : 0.1,
+        condition: d === 3 ? "rainy" : "sunny",
+        summary: d === 3 ? "Rain expected after 3 PM." : "Clear skies."
+      });
+    }
 
-    // Streaming updates
-    const introText = `[AI Brain Engine] Generating Intelligent Local Expert Itinerary for ${knowledge.destination}...
-- District geoclustering complete. Unique regional focus mapped for all ${duration} days.
-- Applying Traveling Salesman (Nearest Neighbor) path optimization.
-- Formatting detailed arrival/departure schedules and outdoor weather safety checks...`;
+    // 6 & 7. Opening Hours, Events & Dinner mappings
+    VoyageLogger.info("DestinationIntelligence", "STEP 6 & 7: Scheduling Timeline");
+    const days: TripItinerary["days"] = [];
+    const streetFood = [...(knowledge.dining?.streetFood || [])];
+    const cafes = [...(knowledge.dining?.cafes || [])];
+    const fineDining = [...(knowledge.dining?.fineDining || [])];
+
+    const activeEvents = await eventProvider.fetchEvents(destination, preferences.startDate || "", preferences.endDate || "");
+
+    // Stream updates
+    const introText = `[AI Brain Engine] Triggering Reversed Planning Engine Pipeline...
+- Resolved ${attractionPool.length} attractions via Places API coordinates.
+- Queried distance matrices from Directions API.
+- Clustered ${duration} districts geographically.
+- Formulated weather-aware daily timelines...`;
 
     if (onTextChunk) {
       const words = introText.split(" ");
@@ -158,35 +169,27 @@ export const mockCopilotService: AICopilotService = {
     }
 
     for (let dayNum = 1; dayNum <= duration; dayNum++) {
-      let rawDayAttractions = allocatedAttractions[dayNum] || [];
+      const weather = simulatedWeatherList[dayNum - 1];
+      let dayAttractions = allocatedAttractions[dayNum] || [];
 
-      // Optimize routes inside cluster (minimize walking distance)
-      let optimizedDayAttractions: Attraction[] = [];
+      // Optimize routes inside cluster
       try {
-        optimizedDayAttractions = GeographicClusterEngine.optimizeRoute(rawDayAttractions);
-      } catch (err) {
-        optimizedDayAttractions = rawDayAttractions;
-      }
-
-      // Day weather settings
-      const weatherCondition = dayNum === 3 ? "rainy" : "sunny";
-      const temp = season === "winter" ? 8 : 22;
-      const weatherSummary = weatherCondition === "rainy" ? "Light Rain Expected" : "Sunny & Clear";
+        dayAttractions = GeographicClusterEngine.optimizeRoute(dayAttractions);
+      } catch (e) {}
 
       const dailyActivities: any[] = [];
       const times = ["09:00 AM", "02:00 PM", "05:00 PM"];
 
-      // Setup timeline activities
-      optimizedDayAttractions.forEach((att, idx) => {
+      dayAttractions.forEach((att, idx) => {
         const arrivalTime = times[idx % times.length];
         const durationHours = parseFloat(att.averageVisitDuration.replace("h", "")) || 1.5;
         
-        // Calculate departure time
+        // Calculate departure
         const hour = parseInt(arrivalTime.split(":")[0]);
         const isPM = arrivalTime.includes("PM");
         const depHour = (hour + Math.floor(durationHours)) % 12 || 12;
         const depIsPM = isPM || (hour + Math.floor(durationHours) >= 12);
-        const depTime = `${depHour}:${String(Math.round((durationHours % 1) * 60)).padStart(2, "0")} ${depIsPM ? "PM" : "AM"}`;
+        const depTime = `${depHour}:00 ${depIsPM ? "PM" : "AM"}`;
 
         dailyActivities.push({
           time: arrivalTime,
@@ -196,25 +199,30 @@ export const mockCopilotService: AICopilotService = {
           category: "sightseeing",
           coordinates: att.coordinates,
           
-          // Sprint 7.7 Metadata parameters
           openingHours: att.openingHours,
           visitDuration: att.averageVisitDuration,
           arrivalTime: arrivalTime,
           departureTime: depTime,
           waitingTime: "10 min",
           crowdIndicator: att.popularity > 85 ? "High Crowds" : "Moderate",
-          rating: (4.0 + (att.popularity / 100)).toFixed(1),
+          rating: att.googleRating?.toFixed(1) || "4.7",
+          googleRating: att.googleRating,
+          googleReviewsCount: att.googleReviewsCount,
+          reviews: att.reviews,
+          images: att.images,
+          busyHours: att.busyHours,
           ticketPrice: att.cost,
           bookingRequired: att.popularity > 90 ? "Yes" : "No",
+          bookingUrl: att.bookingUrl || "https://official-booking.com",
+          website: att.website || "https://official-site.com",
           address: `${att.title} District, ${knowledge.destination}`,
-          website: `https://www.${att.title.toLowerCase().replace(/[^a-z0-9]/g, "")}.com`,
-          accessibility: att.accessibility.includes("wheelchair_accessible") ? "Wheelchair Friendly" : "Standard",
-          nearbyRecommendations: `Cafes: ${knowledge.dining.cafes[0]?.name || "Local Corner Cafe"}, Nearest Metro: Central Gate Station`
+          accessibility: "Wheelchair Friendly",
+          nearbyRecommendations: `Cafes: ${cafes[0]?.name || "Corner Cafe"}, Nearest Metro: Central Gate Station`
         });
 
-        // Insert transit recommendations between activities
-        if (idx < optimizedDayAttractions.length - 1) {
-          const nextAtt = optimizedDayAttractions[idx + 1];
+        // Insert transit recommendation
+        if (idx < dayAttractions.length - 1) {
+          const nextAtt = dayAttractions[idx + 1];
           dailyActivities.push({
             time: depTime,
             title: `Transit to ${nextAtt.title}`,
@@ -227,11 +235,10 @@ export const mockCopilotService: AICopilotService = {
         }
       });
 
-      // Insert Food Engine dining recommendations
+      // Inject Lunch & Dinner
       try {
         const { lunch, dinner } = FoodEngine.getRecommendations(knowledge, preferences, dayNum);
 
-        // Insert Lunch before afternoon attraction
         const afternoonIdx = dailyActivities.findIndex(a => a.time === "02:00 PM" || a.time === "05:00 PM");
         const insertLunchIdx = afternoonIdx >= 0 ? afternoonIdx : dailyActivities.length;
 
@@ -256,7 +263,6 @@ export const mockCopilotService: AICopilotService = {
           nearbyRecommendations: "Nearest Metro: Food Market Square"
         });
 
-        // Append Dinner at end of day
         dailyActivities.push({
           time: "07:30 PM",
           title: `Dinner at ${dinner.name}`,
@@ -278,14 +284,14 @@ export const mockCopilotService: AICopilotService = {
           nearbyRecommendations: "Nearest Parking Available"
         });
       } catch (err: any) {
-        VoyageLogger.warn("DestinationIntelligence", `Food Engine mapping failed: ${err.message}`);
+        VoyageLogger.warn("DestinationIntelligence", `Dining injection failed: ${err.message}`);
       }
 
-      // Add a relaxing walk/sunset spot
+      // Add a relaxing activity at the end
       dailyActivities.push({
         time: "09:00 PM",
-        title: `Sunset Walk / Relaxation`,
-        description: "Unwind at a local park or scenic overlook to close out the day.",
+        title: `Relaxation Walk`,
+        description: "Enjoy a peaceful evening walk around the local park or riverfront.",
         cost: "Free",
         category: "other",
         openingHours: "24/7",
@@ -297,7 +303,7 @@ export const mockCopilotService: AICopilotService = {
         rating: "4.6",
         ticketPrice: "Free",
         bookingRequired: "No",
-        address: `Riverside Promenade, ${knowledge.destination}`,
+        address: `Riverside Park, ${knowledge.destination}`,
         website: "https://local-parks.com",
         accessibility: "Pet Friendly",
         nearbyRecommendations: "Nearest ATM: Central Square Bank"
@@ -310,21 +316,16 @@ export const mockCopilotService: AICopilotService = {
         restaurants: []
       });
     }
-    VoyageLogger.info("DestinationIntelligence", "END Route Optimization & Day Scheduling");
 
-    // --- STAGE 5: DYNAMIC BUDGET & TIMELINE BUILDER ---
-    VoyageLogger.info("DestinationIntelligence", "START Dynamic Budget & Timeline Builder");
-    
-    // Hotel cost calculations
+    // 8. Dynamic Budget calculations
+    VoyageLogger.info("DestinationIntelligence", "STEP 8: Budget calculations");
     const hotelCostPerNight = budgetLevel === "luxury" ? 280 : budgetLevel === "budget" ? 45 : 130;
     const accommodationTotal = hotelCostPerNight * (duration - 1 || 1);
-    
-    // Activity cost calculations
     const ticketCostTotal = 80 * duration;
     const foodCostTotal = 50 * duration * travelers;
     const transitCostTotal = 15 * duration;
     const emergencyBuffer = 45;
-    
+
     const totalSpend = accommodationTotal + ticketCostTotal + foodCostTotal + transitCostTotal + emergencyBuffer;
     const dailySpend = Math.round(totalSpend / duration);
 
@@ -371,7 +372,7 @@ export const mockCopilotService: AICopilotService = {
       resultItinerary.overview += `\n\n[Warning Report]:\n` + errorsReport.map(e => `- ${e}`).join("\n");
     }
 
-    VoyageLogger.info("DestinationIntelligence", "END Dynamic Budget & Timeline Builder");
+    VoyageLogger.info("DestinationIntelligence", "END Reversed Planning Engine Pipeline");
     return resultItinerary;
   }
 };

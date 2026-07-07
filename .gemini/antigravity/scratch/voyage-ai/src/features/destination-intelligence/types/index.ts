@@ -3,24 +3,44 @@ export interface Coordinate {
   lng: number;
 }
 
+export interface Review {
+  author: string;
+  rating: number;
+  text: string;
+  date: string;
+}
+
 export interface Attraction {
   title: string;
   description: string;
   cost: string;
-  averageVisitDuration: string; // e.g. "2h"
+  averageVisitDuration: string;
   bestTimeOfDay: "sunrise" | "morning" | "afternoon" | "sunset" | "night";
   coordinates: Coordinate;
   openingHours: string;
   
-  // New Metadata Fields
-  categories: string[]; // e.g. ["landmark", "history", "photography"]
-  popularity: number; // 0-100
-  accessibility: string[]; // e.g. ["wheelchair", "assistive_audio"]
+  // Metadata Fields
+  categories: string[];
+  popularity: number;
+  accessibility: string[];
   weatherDependency: "high" | "low";
-  photographyScore: number; // 0-10
+  photographyScore: number;
   isRelaxing?: boolean;
   isHiddenGem?: boolean;
   isPhotoSpot?: boolean;
+
+  // Sprint 7.8 Extensions
+  placeId?: string;
+  phone?: string;
+  address?: string;
+  website?: string;
+  bookingRequired?: string;
+  bookingUrl?: string;
+  images?: string[]; // Hero cover + Gallery images
+  googleRating?: number;
+  googleReviewsCount?: number;
+  reviews?: Review[];
+  busyHours?: Record<string, string>; // e.g. { "9 AM": "Low", "12 PM": "High" }
 }
 
 export interface RestaurantRecommendation {
@@ -43,12 +63,15 @@ export interface NearbyRecommendations {
   parking: string[];
   metroStations: string[];
   emergencyServices: string[];
+  hotels?: string[];
+  atms?: string[];
+  pharmacies?: string[];
 }
 
 export interface DestinationEvent {
   title: string;
   description: string;
-  month: number; // 1-12
+  month: number;
   category: "festival" | "concert" | "exhibition" | "holiday" | "other";
   cost: string;
 }
@@ -62,7 +85,7 @@ export interface DestinationKnowledge {
   currency: string;
   timezone: string;
   bestSeason: string;
-  safetyScore: number; // 0-100
+  safetyScore: number;
   crowdLevels: "low" | "medium" | "high";
   weatherSummary: string;
   visaNotes: string;
@@ -79,18 +102,15 @@ export interface DestinationKnowledge {
     sightseeing: string;
   };
   
-  // Categorized points of interest
   mustVisitAttractions: Attraction[];
   hiddenGems: Attraction[];
   
-  // Food & Dining recommendations
   dining: {
     streetFood: RestaurantRecommendation[];
     fineDining: RestaurantRecommendation[];
     cafes: RestaurantRecommendation[];
   };
 
-  // Experiences
   nightlife: string[];
   adventureActivities: string[];
   museums: string[];
@@ -100,7 +120,6 @@ export interface DestinationKnowledge {
   shoppingAreas: string[];
   markets: string[];
   
-  // Segmented Experiences
   soloExperiences: string[];
   coupleExperiences: string[];
   familyAttractions: string[];
@@ -109,11 +128,10 @@ export interface DestinationKnowledge {
   
   localFestivals: string[];
   travelTips: TravelTips;
-  popularityScore: number; // 0-100
-  userRating: number; // 0.0-5.0
+  popularityScore: number;
+  userRating: number;
   nearbyRecommendations: Record<string, NearbyRecommendations>;
   
-  // Seasonal & Events lists
-  seasonalActivities?: Record<string, string[]>; // Mapping "spring", "summer", "autumn", "winter" to activity titles
+  seasonalActivities?: Record<string, string[]>;
   events?: DestinationEvent[];
 }
