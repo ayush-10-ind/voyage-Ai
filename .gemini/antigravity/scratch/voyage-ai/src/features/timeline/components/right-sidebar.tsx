@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTimelineStore } from "../store/use-timeline-store";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Typography } from "@/components/ui/typography";
@@ -9,12 +9,13 @@ import { Button } from "@/components/ui/button";
 import { MapContainer } from "@/features/map/components/map-container";
 import { PhotoGallery } from "@/components/ui/PhotoGallery";
 import { googleMapsProvider } from "@/features/map/providers/google-maps-provider";
+import { placePhotoProvider } from "@/features/destination-intelligence/providers/photo-provider";
 
 export function RightSidebar() {
   const { trip, selectedActivityId, selectActivity } = useTimelineStore();
   const [activeDayFilter, setActiveDayFilter] = useState<number | "all">("all");
-
-  if (!trip) return null;
+  const [images, setImages] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
 
   // Find selected activity
   let selectedActivity: any = null;
@@ -34,6 +35,24 @@ export function RightSidebar() {
       }
     }
   }
+
+  // Preload and fetch photos dynamically from provider
+  useEffect(() => {
+    if (!selectedActivity || !trip) return;
+    
+    setLoading(true);
+    placePhotoProvider.getImages(selectedActivity.title, trip.destination)
+      .then(res => {
+        setImages(res);
+        setLoading(false);
+      })
+      .catch(() => {
+        setImages(selectedActivity.images || []);
+        setLoading(false);
+      });
+  }, [selectedActivity?.id, trip?.destination]);
+
+  if (!trip) return null;
 
   // Compile waypoints from all trip activities
   const allWaypoints = trip.days.flatMap((day) =>
@@ -134,10 +153,15 @@ export function RightSidebar() {
               </div>
             </div>
 
-            {/* Photo Gallery Component */}
-            <PhotoGallery images={selectedActivity.images || [
-              "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=800&q=80"
-            ]} />
+            {/* Dynamic Photo Gallery with Skeleton loader */}
+            {loading ? (
+              <div className="w-full h-36 bg-white/5 animate-pulse rounded-xl flex flex-col items-center justify-center text-[10px] text-zinc-500 gap-2 border border-white/5">
+                <Icons.time className="h-5 w-5 animate-spin text-primary" />
+                <span>Preloading Place Images...</span>
+              </div>
+            ) : (
+              <PhotoGallery images={images} />
+            )}
 
             {/* Quick Facts Grid */}
             <div className="grid grid-cols-2 gap-2 bg-white/5 border border-white/5 p-2.5 rounded-xl text-[10px]">

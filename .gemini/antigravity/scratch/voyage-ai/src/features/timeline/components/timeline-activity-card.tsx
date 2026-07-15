@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import React, { memo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Activity } from "../types";
 import { GlassCard } from "@/components/ui/glass-card";
@@ -6,6 +6,7 @@ import { Icons } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { useTimelineStore } from "../store/use-timeline-store";
 import { SelectionOutline } from "./timeline-elements";
+import { placePhotoProvider } from "@/features/destination-intelligence/providers/photo-provider";
 
 interface TimelineActivityCardProps {
   activity: Activity;
@@ -22,8 +23,26 @@ export const TimelineActivityCard = memo(function TimelineActivityCard({
   onEdit,
   onDelete,
 }: TimelineActivityCardProps) {
-  const { selectedActivityId, selectActivity, updateActivity } = useTimelineStore();
+  const { selectedActivityId, selectActivity, updateActivity, trip } = useTimelineStore();
   const isSelected = selectedActivityId === activity.id;
+  const [thumbUrl, setThumbUrl] = useState<string>("");
+
+  useEffect(() => {
+    if (activity.category === "transit" || !trip) return;
+    
+    // Resolve dynamic place image for thumbnail card
+    placePhotoProvider.getImages(activity.title, trip.destination)
+      .then(urls => {
+        if (urls && urls.length > 0) {
+          setThumbUrl(urls[0]);
+        }
+      })
+      .catch(() => {
+        if (activity.images && activity.images.length > 0) {
+          setThumbUrl(activity.images[0]);
+        }
+      });
+  }, [activity.title, activity.category, activity.images, trip?.destination]);
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData(
@@ -71,9 +90,6 @@ export const TimelineActivityCard = memo(function TimelineActivityCard({
     );
   }
 
-  // Cast properties to access Sprint 7.7 extensions
-  const actExt = activity as any;
-
   return (
     <div
       draggable
@@ -91,7 +107,7 @@ export const TimelineActivityCard = memo(function TimelineActivityCard({
         <SelectionOutline isSelected={isSelected}>
           <GlassCard
             padding="sm"
-            className={`group relative flex flex-col gap-2.5 bg-white/5 border-white/10 hover:border-primary/30 transition-colors shadow-sm ${
+            className={`group relative flex flex-col gap-2 bg-[#0b1120]/80 border-white/10 hover:border-primary/30 transition-colors shadow-sm ${
               isSelected ? "border-primary/50" : ""
             }`}
           >
@@ -101,9 +117,10 @@ export const TimelineActivityCard = memo(function TimelineActivityCard({
                 <span className="text-[9px] font-mono text-primary bg-primary/10 px-2 py-0.5 rounded-full font-semibold">
                   {activity.time}
                 </span>
-                {actExt.rating && (
+                {activity.googleRating && (
                   <span className="text-[9px] text-amber-400 font-bold flex items-center gap-0.5">
-                    ★ {actExt.rating}
+                    ★ {activity.googleRating.toFixed(1)} 
+                    <span className="text-zinc-500 font-normal">({activity.googleReviewsCount?.toLocaleString()})</span>
                   </span>
                 )}
               </div>
@@ -132,45 +149,49 @@ export const TimelineActivityCard = memo(function TimelineActivityCard({
               </div>
             </div>
 
-            {/* Title & Description */}
-            <div className="space-y-1">
-              <p className="text-xs font-bold text-white leading-tight">
-                {activity.title}
-              </p>
-              <p className="text-[11px] text-muted-foreground leading-normal">
-                {activity.description}
-              </p>
+            {/* Layout with Image Thumbnail on Left, Title details on Right */}
+            <div className="flex gap-2.5 items-start">
+              {thumbUrl && (
+                <div className="h-12 w-16 rounded-lg overflow-hidden shrink-0 bg-white/5 relative border border-white/5">
+                  <img 
+                    src={thumbUrl} 
+                    alt="Place Preview" 
+                    loading="lazy" 
+                    className="w-full h-full object-cover transition-opacity duration-300"
+                  />
+                </div>
+              )}
+              <div className="space-y-0.5 flex-1 min-w-0">
+                <p className="text-xs font-bold text-white leading-tight truncate">
+                  {activity.title}
+                </p>
+                <p className="text-[10px] text-muted-foreground leading-snug line-clamp-2">
+                  {activity.description}
+                </p>
+              </div>
             </div>
 
             {/* Visit Details Grid */}
-            {(actExt.openingHours || actExt.visitDuration || actExt.crowdIndicator) && (
-              <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 pt-1.5 border-t border-white/5 text-[10px] text-zinc-400">
-                {actExt.openingHours && (
+            {(activity.openingHours || activity.visitDuration || activity.crowdIndicator) && (
+              <div className="grid grid-cols-2 gap-x-2 gap-y-1 pt-1.5 border-t border-white/5 text-[9px] text-zinc-400">
+                {activity.openingHours && (
                   <div className="flex items-center gap-1">
-                    <Icons.time className="h-3 w-3 text-primary shrink-0" />
-                    <span className="truncate">Hours: {actExt.openingHours}</span>
+                    <Icons.time className="h-2.5 w-2.5 text-primary shrink-0" />
+                    <span className="truncate">Hours: {activity.openingHours}</span>
                   </div>
                 )}
-                {actExt.visitDuration && (
+                {activity.visitDuration && (
                   <div className="flex items-center gap-1">
-                    <Icons.calendar className="h-3 w-3 text-cyan-400 shrink-0" />
-                    <span>Duration: {actExt.visitDuration}</span>
-                  </div>
-                )}
-                {actExt.crowdIndicator && (
-                  <div className="flex items-center gap-1 col-span-2">
-                    <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                      actExt.crowdIndicator === "High Crowds" ? "bg-red-400" : "bg-emerald-400"
-                    }`} />
-                    <span>Crowds: {actExt.crowdIndicator}</span>
+                    <Icons.calendar className="h-2.5 w-2.5 text-cyan-400 shrink-0" />
+                    <span>Duration: {activity.visitDuration}</span>
                   </div>
                 )}
               </div>
             )}
 
             {/* Footer Navigation Button */}
-            <div className="pt-2 border-t border-white/5 flex items-center justify-between w-full">
-              <span className="text-[10px] font-mono text-zinc-400">
+            <div className="pt-1.5 border-t border-white/5 flex items-center justify-between w-full text-[9px]">
+              <span className="font-mono text-zinc-400">
                 Price: {activity.cost || "Free"}
               </span>
               <a
@@ -178,9 +199,9 @@ export const TimelineActivityCard = memo(function TimelineActivityCard({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="text-[9px] font-bold text-primary hover:underline flex items-center gap-1"
+                className="font-bold text-primary hover:underline flex items-center gap-0.5"
               >
-                📍 Open in Google Maps
+                📍 Get Directions
               </a>
             </div>
           </GlassCard>

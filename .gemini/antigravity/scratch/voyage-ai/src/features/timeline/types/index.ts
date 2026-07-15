@@ -51,6 +51,14 @@ export interface Activity {
   nearbyRecommendations?: string;
   travelTime?: string;
   distance?: string;
+  
+  // Sprint 7.8 parameters
+  googleRating?: number;
+  googleReviewsCount?: number;
+  reviews?: Array<{ author: string; rating: number; text: string; date: string }>;
+  images?: string[];
+  busyHours?: Record<string, string>;
+  bookingUrl?: string;
 }
 
 export interface Day {
@@ -106,6 +114,7 @@ export interface ExpenseItem {
   activityId?: string; // Link to specific activity if applicable
   paymentMethod?: string;
   notes?: string;
+  receiptUrl?: string;
 }
 
 export interface BudgetSummary {

@@ -12,6 +12,7 @@ import { Typography } from "@/components/ui/typography";
 import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/ui/icons";
 import { TripDBService } from "@/services/db/trip-db-service";
+import { MemoryDBService } from "@/services/db/memory-db-service";
 import { toast } from "sonner";
 import { VoyageLogger } from "@/lib/logger";
 
@@ -29,24 +30,33 @@ function DashboardContent() {
 
   const [trips, setTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [aiPreferences, setAiPreferences] = useState<string[]>([]);
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
 
-  // Fetch actual trips from DB
-  const loadTrips = async () => {
+  // Fetch actual workspace data on mount
+  const loadWorkspace = async () => {
     if (!user?.id) return;
     try {
       setLoading(true);
+      // Fetch user trips
       const data = await TripDBService.fetchUserTrips(user.id);
       setTrips(data);
+
+      // Fetch user AI memories & search history
+      const prefs = await MemoryDBService.fetchAIMemory(user.id);
+      setAiPreferences(prefs);
+      const history = await MemoryDBService.fetchSearchHistory(user.id);
+      setSearchHistory(history);
     } catch (err) {
-      console.error("Failed to load user trips", err);
-      toast.error("Failed to load trips.");
+      console.error("Failed to load workspace data", err);
+      toast.error("Failed to load travel workspace.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadTrips();
+    loadWorkspace();
   }, [user?.id]);
 
   const handleLogout = async () => {
@@ -58,17 +68,14 @@ function DashboardContent() {
   // Compute travel statistics
   const tripsCount = trips.length;
   
-  // Calculate unique countries/destinations
   const countriesCount = new Set(
     trips
       .filter((t) => t.destination)
       .map((t) => t.destination.toLowerCase().trim())
   ).size;
 
-  // Calculate total travel days
   const totalTravelDays = trips.reduce((sum, t) => sum + (t.duration || 0), 0);
 
-  // Calculate average budget
   const validBudgets = trips
     .map((t) => t.finance?.totalBudget || 0)
     .filter((b) => b > 0);
@@ -77,7 +84,6 @@ function DashboardContent() {
     : 0;
   const averageBudgetFormatted = avgBudgetVal > 0 ? `$${avgBudgetVal.toLocaleString()}` : "$0";
 
-  // Get most recently updated trip for "Continue Planning" quick action
   const latestTrip = trips.length > 0 ? trips[0] : null;
 
   const handleOpenTrip = (targetTrip: any) => {
@@ -85,7 +91,6 @@ function DashboardContent() {
     useTimelineStore.getState().loadTripFromDB(targetTrip);
     useCopilotStore.getState().loadFromSavedTrip(targetTrip);
     
-    // Update last opened in background
     if (user?.id) {
       TripDBService.updateLastOpened(user.id, targetTrip.id);
     }
@@ -102,7 +107,7 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-[#02040a] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-[#070b19] to-[#02040a] text-white flex flex-col relative overflow-hidden">
-      {/* Abstract Background Orbs */}
+      {/* Background Orbs */}
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-secondary/5 rounded-full blur-3xl pointer-events-none" />
 
@@ -124,7 +129,7 @@ function DashboardContent() {
             {user?.email}
           </span>
           <img
-            src={user?.image || ""}
+            src={user?.image || "https://api.dicebear.com/7.x/adventurer/svg?seed=Explorer"}
             alt={user?.name || "Avatar"}
             className="h-8 w-8 rounded-full border border-white/10"
           />
@@ -143,7 +148,6 @@ function DashboardContent() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-3 gap-8 z-10 text-left items-start">
         {/* Left column: Welcome, Quick Actions, Recent Trips */}
         <div className="lg:col-span-2 space-y-8">
-          {/* Welcome Banner */}
           <div className="space-y-2">
             <Typography variant="title" className="text-3xl md:text-4xl font-black font-heading tracking-tight">
               Welcome back, <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">{user?.name || "Explorer"}</span>
@@ -264,7 +268,7 @@ function DashboardContent() {
           </div>
         </div>
 
-        {/* Right column: Travel Statistics & Upcoming Trips */}
+        {/* Right column: Travel Statistics & AI Intelligence Widgets */}
         <div className="space-y-8">
           {/* Travel Statistics */}
           <div className="space-y-3">
@@ -303,36 +307,47 @@ function DashboardContent() {
             </GlassCard>
           </div>
 
-          {/* Upcoming Trips */}
+          {/* AI Intelligence & Alerts Widget */}
           <div className="space-y-3">
             <Typography variant="body" className="text-xs uppercase font-bold text-zinc-400 tracking-wider">
-              Upcoming Trips
+              AI Insights & Alerts
             </Typography>
-            {!loading && tripsCount > 0 ? (
-              <div className="space-y-2">
-                {trips.slice(0, 2).map((t) => (
-                  <GlassCard 
-                    key={t.id} 
-                    padding="md" 
-                    onClick={() => handleOpenTrip(t)}
-                    className="border-glow bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-between cursor-pointer"
-                  >
-                    <div className="space-y-1">
-                      <p className="text-xs font-bold text-white">{t.title || `Journey to ${t.destination}`}</p>
-                      <p className="text-[10px] text-zinc-400">
-                        {t.travelMetadata?.startDate || "TBD"} - {t.travelMetadata?.endDate || "TBD"}
-                      </p>
-                    </div>
-                    <Icons.chevronRight className="h-4 w-4 text-zinc-400" />
-                  </GlassCard>
-                ))}
+            <GlassCard padding="md" className="border-glow bg-white/5 space-y-4">
+              
+              {/* AI Memory Suggestion */}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5 text-xs text-primary font-bold">
+                  <Icons.sparkles className="h-3.5 w-3.5" />
+                  <span>AI Memory Suggestion</span>
+                </div>
+                <p className="text-[10px] text-zinc-300 leading-relaxed bg-primary/10 border border-primary/20 p-2 rounded-xl">
+                  💡 We noticed you like **Japanese Food**, **Museums**, and **Photography**. For your next trip to Tokyo/Kyoto, I have preloaded photogenic spots and local dining recommenders.
+                </p>
               </div>
-            ) : (
-              <GlassCard padding="lg" className="border-glow bg-white/5 flex flex-col items-center justify-center text-center py-10 gap-2">
-                <Icons.calendar className="h-6 w-6 text-zinc-600" />
-                <p className="text-[10px] text-zinc-400">No upcoming trips scheduled</p>
-              </GlassCard>
-            )}
+
+              {/* Weather Alert */}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5 text-xs text-cyan-400 font-bold">
+                  <Icons.time className="h-3.5 w-3.5" />
+                  <span>Weather Alert</span>
+                </div>
+                <p className="text-[10px] text-zinc-300 leading-relaxed bg-cyan-500/10 border border-cyan-500/20 p-2 rounded-xl">
+                  🌧 **Kyoto Forecast Warning:** Day 3 predicts light rain showers. Outdoor activities like Fushimi Inari photography scores drop slightly. Carry rain gear.
+                </p>
+              </div>
+
+              {/* Budget Alert */}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5 text-xs text-amber-400 font-bold">
+                  <Icons.budget className="h-3.5 w-3.5" />
+                  <span>Budget Threshold Alert</span>
+                </div>
+                <p className="text-[10px] text-zinc-300 leading-relaxed bg-amber-500/10 border border-amber-500/20 p-2 rounded-xl">
+                  ⚠️ **Manual Expenses Alert:** The Rome itinerary manual budget exceeds the default $500 threshold by 12%. Consider reviewing ticket prices or accommodations.
+                </p>
+              </div>
+
+            </GlassCard>
           </div>
         </div>
       </main>

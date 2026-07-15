@@ -46,6 +46,17 @@ export function TripStudio() {
     }
   }, [itinerary, preferences, initializeFromItinerary]);
 
+  // Invalidate old broken photo caches
+  useEffect(() => {
+    try {
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith("place_photos_")) {
+          localStorage.removeItem(key);
+        }
+      });
+    } catch (e) {}
+  }, []);
+
   // Debounced auto-save (2 seconds)
   useEffect(() => {
     if (!trip || !user?.id) return;

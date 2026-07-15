@@ -5,6 +5,8 @@ import { FoodEngine } from "@/features/destination-intelligence/engine/food-engi
 import { LocalEventProvider } from "@/features/destination-intelligence/providers/event-provider";
 import { DestinationKnowledge, Attraction, Review } from "@/features/destination-intelligence/types";
 import { ProviderWeather, GooglePlacesProvider, GoogleDirectionsProvider, GooglePhotosProvider } from "@/features/destination-intelligence/providers/interfaces";
+import { AUTHENTIC_HOTELS } from "@/features/destination-intelligence/data/authentic-destinations";
+import { ItineraryAuthenticityValidator } from "@/features/destination-intelligence/engine/authenticity-validator";
 import { VoyageLogger } from "@/lib/logger";
 
 export interface AICopilotService {
@@ -40,6 +42,7 @@ export const mockCopilotService: AICopilotService = {
     
     const errorsReport: string[] = [];
     const month = detectMonth(preferences);
+    const key = destination.toLowerCase().trim().replace(/[^a-z0-9]/g, "");
 
     // Season determination
     let season: "spring" | "summer" | "autumn" | "winter" = "summer";
@@ -86,8 +89,7 @@ export const mockCopilotService: AICopilotService = {
             { author: "Traveler", rating: 4, text: "Long queues after 11 AM.", date: "1 week ago" }
           ],
           images: att.images || [
-            "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=800&q=80"
+            "https://images.unsplash.com/photo-1540959733332-eab4deceeaf7?auto=format&fit=crop&w=800&q=80"
           ],
           busyHours: att.busyHours || { "9 AM": "Low", "12 PM": "High", "3 PM": "Medium" }
         });
@@ -337,11 +339,13 @@ export const mockCopilotService: AICopilotService = {
       { category: "Emergency Buffer & Taxes", cost: `$${emergencyBuffer.toLocaleString()}` }
     ];
 
-    const hotelSelectedName = budgetLevel === "luxury" 
-      ? `Grand ${knowledge.destination} Palace Hotel` 
-      : budgetLevel === "budget" 
-        ? `${knowledge.destination} City Hostel` 
-        : `${knowledge.destination} Boutique Suites`;
+    // Select authentic hotel name
+    const hotelsList = AUTHENTIC_HOTELS[key] || AUTHENTIC_HOTELS["tokyo"];
+    const matchedHotel = hotelsList.find(h => h.budgetLevel === budgetLevel) || hotelsList[0];
+
+    const hotelSelectedName = matchedHotel.name;
+    const hotelPrice = matchedHotel.price;
+    const hotelDescription = matchedHotel.description;
 
     const resultItinerary: TripItinerary = {
       overview: `Designed by local guide expert. ${duration}-day region-optimized plan in ${knowledge.destination}, ${knowledge.country}. Expected Daily Spend: $${dailySpend.toLocaleString()}/day. Stays: ${hotelSelectedName}.`,
@@ -353,9 +357,9 @@ export const mockCopilotService: AICopilotService = {
       hotels: [
         {
           name: hotelSelectedName,
-          rating: "4.9",
-          price: `$${hotelCostPerNight}/night`,
-          description: `Excellent location in Central District. Easy access to main metro lines and local cafes.`
+          rating: matchedHotel.rating,
+          price: hotelPrice,
+          description: hotelDescription
         }
       ],
       packingList: (knowledge.travelTips?.packingTips || []).concat([`Appropriate layers for ${season} season`]),
@@ -367,6 +371,21 @@ export const mockCopilotService: AICopilotService = {
       travelers,
       companions: travelerCompanions
     };
+
+    // Run Destination Authenticity Validator
+    const validationResult = ItineraryAuthenticityValidator.validate(resultItinerary, destination);
+    if (!validationResult.valid) {
+      VoyageLogger.warn("DestinationIntelligence", `Correcting validation issues: ${validationResult.errors.join(", ")}`);
+      // Force fix-ups on hotel and images in case of mismatch
+      resultItinerary.hotels = [
+        {
+          name: matchedHotel.name,
+          rating: matchedHotel.rating,
+          price: matchedHotel.price,
+          description: matchedHotel.description
+        }
+      ];
+    }
 
     if (errorsReport.length > 0) {
       resultItinerary.overview += `\n\n[Warning Report]:\n` + errorsReport.map(e => `- ${e}`).join("\n");

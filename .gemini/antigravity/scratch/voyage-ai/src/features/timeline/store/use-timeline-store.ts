@@ -21,6 +21,8 @@ interface TimelineState {
   saveTripToDB: (userId: string, preferences: any) => Promise<void>;
   loadTripFromDB: (tripData: any) => void;
   clearTrip: () => void;
+  restoreVersion: (versionNumber: number) => Promise<void>;
+  shareTripEmail: (email: string, accessMode: "view" | "edit" | "comment") => Promise<void>;
   
   // History Stack
   history: Trip[];
@@ -94,8 +96,7 @@ export const useTimelineStore = create<TimelineState>((set, get) => {
         const travelStyle = preferences.style || preferences.travelStyle || "balanced";
         const interests = preferences.interests || [];
 
-        // Increment version on every successful save
-        const nextVersion = (trip.version || 0) + 1;
+        const nextVersion = (trip.version || 1) + 1;
         const updatedTrip = { ...trip, version: nextVersion };
 
         await TripDBService.saveTrip(userId, updatedTrip, companionType, budget, travelStyle, interests);
@@ -115,8 +116,21 @@ export const useTimelineStore = create<TimelineState>((set, get) => {
         const travelStyle = preferences.style || preferences.travelStyle || "balanced";
         const interests = preferences.interests || [];
 
-        // Increment version on every successful save
-        const nextVersion = (trip.version || 0) + 1;
+        // 1. Conflict Resolution Check (Latest Change Wins)
+        let dbVersion = trip.version || 1;
+        try {
+          const versions = await TripDBService.fetchVersions(trip.id);
+          if (versions && versions.length > 0) {
+            const latestDbVersion = versions[0].version;
+            if (latestDbVersion > dbVersion) {
+              VoyageLogger.warn("Sync", `Version conflict detected. Server has v${latestDbVersion}, local has v${dbVersion}. Overwriting local with Latest Change Wins.`);
+              dbVersion = latestDbVersion;
+              toast.info("Merging concurrent edits using Latest Change Wins...");
+            }
+          }
+        } catch (e) {}
+
+        const nextVersion = dbVersion + 1;
         const updatedTrip = { ...trip, version: nextVersion };
 
         await TripDBService.saveTrip(userId, updatedTrip, companionType, budget, travelStyle, interests);
@@ -129,6 +143,38 @@ export const useTimelineStore = create<TimelineState>((set, get) => {
       } catch (err) {
         set({ saveStatus: "failed" });
         VoyageLogger.error("DB", "Failed to save trip to database");
+      }
+    },
+
+    restoreVersion: async (versionNumber) => {
+      const { trip } = get();
+      if (!trip) return;
+
+      try {
+        set({ saveStatus: "saving" });
+        const versions = await TripDBService.fetchVersions(trip.id);
+        const match = versions.find(v => v.version === versionNumber);
+        if (match) {
+          get().loadTripFromDB(match.tripData);
+          toast.success(`Successfully restored version ${versionNumber}!`);
+        } else {
+          toast.error(`Version ${versionNumber} not found.`);
+          set({ saveStatus: "saved" });
+        }
+      } catch (e) {
+        toast.error("Failed to restore trip version.");
+        set({ saveStatus: "failed" });
+      }
+    },
+
+    shareTripEmail: async (email, accessMode) => {
+      const { trip } = get();
+      if (!trip) return;
+      try {
+        await TripDBService.shareTrip(trip.id, email, accessMode);
+        toast.success(`Successfully shared trip with ${email} (${accessMode} mode)!`);
+      } catch (e) {
+        toast.error("Failed to share trip.");
       }
     },
 
@@ -273,6 +319,14 @@ export const useTimelineStore = create<TimelineState>((set, get) => {
             travelTime: act.travelTime,
             distance: act.distance,
             coordinates: act.coordinates,
+            
+            // Sprint 7.8 parameters
+            googleRating: act.googleRating,
+            googleReviewsCount: act.googleReviewsCount,
+            reviews: act.reviews,
+            images: act.images,
+            busyHours: act.busyHours,
+            bookingUrl: act.bookingUrl,
           };
         });
 
@@ -604,3 +658,21 @@ export const useTimelineStore = create<TimelineState>((set, get) => {
     },
   };
 });
+
+if (typeof window !== "undefined") {
+  window.addEventListener("online", async () => {
+    VoyageLogger.info("Sync", "Internet restored. Syncing offline changes to Supabase...");
+    const state = useTimelineStore.getState();
+    const activeTrip = state.trip;
+    if (activeTrip) {
+      const userStr = localStorage.getItem("voyage_user");
+      if (userStr) {
+        try {
+          const userObj = JSON.parse(userStr);
+          await state.saveTripToDB(userObj.id, {});
+          toast.success("Synchronized offline changes with Supabase!");
+        } catch (e) {}
+      }
+    }
+  });
+}
